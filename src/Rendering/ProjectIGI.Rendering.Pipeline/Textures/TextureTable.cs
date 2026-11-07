@@ -426,10 +426,24 @@ public sealed class TextureTable : ITextureBindingSource, IDisposable
             ? RhiAddressMode.Repeat
             : RhiAddressMode.ClampToEdge;
 
+        // Anisotropy above one is only valid with linear filters on every axis: WebGPU refuses
+        // a sampler that asks for it with a nearest filter (a validation error, and the handle
+        // comes back invalid, which throws on the game thread), and without blended mips it has
+        // nothing to choose between anyway. The pause screen's Texture Sharpness and Blend Mip
+        // Levels rows are independent, so the combination reaches here — vanilla defaults to
+        // nearest mips, so raising sharpness alone was enough to crash a mission on WebGPU.
+        // The retail graphics screen already pairs them this way, so nothing it asks for changes.
+        bool anisotropic = description.MipLevels > 1 && MaxAnisotropy > 1;
+        RhiFilter mipFilter = anisotropic || !PointMips ? RhiFilter.Linear : RhiFilter.Nearest;
+        if (anisotropic)
+        {
+            filter = RhiFilter.Linear;
+        }
+
         RhiSamplerDescriptor wanted = new(
             filter,
             filter,
-            PointMips ? RhiFilter.Nearest : filter,
+            mipFilter,
             address,
             address,
             address,
@@ -440,7 +454,7 @@ public sealed class TextureTable : ITextureBindingSource, IDisposable
             Compare: null,
             LodMin: 0f,
             LodMax: 1000f,
-            $"{filter}-{address}{(PointMips ? "-pointmip" : string.Empty)}",
+            $"{filter}-{address}{(mipFilter is RhiFilter.Nearest ? "-pointmip" : string.Empty)}",
 
             // The frame's mip bias, only where there are levels to choose.
             MipLodBias: description.MipLevels > 1 ? MipLodBias : 0f);
