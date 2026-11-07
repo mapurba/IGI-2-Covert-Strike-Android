@@ -38,7 +38,7 @@ internal sealed unsafe class VulkanRhiAccelerationStructures : IRhiAccelerationS
         _api = api;
         _device = device;
         _allocator = allocator;
-        _barriers = new VulkanBarrierBatcher(vk);
+        _barriers = new VulkanBarrierBatcher(vk, device.Capabilities.Synchronization2);
     }
 
     /// <inheritdoc/>

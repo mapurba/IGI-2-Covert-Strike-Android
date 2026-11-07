@@ -15,20 +15,31 @@ namespace ProjectIGI.Rendering.Vulkan.Sync;
 /// </para>
 /// <para>
 /// Synchronisation 2, because it states the stage masks on the barrier itself rather than on the call.
+/// Where the adapter has no synchronisation 2 -- a Vulkan 1.1 or 1.2 device without it -- the same
+/// dependency is issued as the original <c>vkCmdPipelineBarrier</c>, with the stage and access masks
+/// translated down. An acceleration-structure build has no stage in the original API, so it is ordered
+/// against the compute stage, which is where its work runs.
 /// </para>
 /// </remarks>
 internal sealed unsafe class VulkanBarrierBatcher
 {
     private readonly Vk _vk;
+    private readonly bool _synchronization2;
     private MemoryBarrier2 _memoryBarrier;
     private bool _hasMemoryBarrier;
 
     /// <summary>Initialises a new instance of the <see cref="VulkanBarrierBatcher"/> class.</summary>
     /// <param name="vk">The core Vulkan API.</param>
-    public VulkanBarrierBatcher(Vk vk)
+    /// <param name="synchronization2">
+    /// Whether the adapter has synchronisation 2: when false, barriers are issued through the original
+    /// <c>vkCmdPipelineBarrier</c> instead, because <c>vkCmdPipelineBarrier2</c> is a null function
+    /// pointer on a device without it.
+    /// </param>
+    public VulkanBarrierBatcher(Vk vk, bool synchronization2)
     {
         ArgumentNullException.ThrowIfNull(vk);
         _vk = vk;
+        _synchronization2 = synchronization2;
     }
 
     /// <summary>Gets a value indicating whether anything is waiting to be flushed.</summary>
@@ -119,15 +130,44 @@ internal sealed unsafe class VulkanBarrierBatcher
             return;
         }
 
-        MemoryBarrier2 memory = _memoryBarrier;
-        DependencyInfo info = new()
+        if (_synchronization2)
         {
-            SType = StructureType.DependencyInfo,
-            MemoryBarrierCount = 1,
-            PMemoryBarriers = &memory,
-        };
+            MemoryBarrier2 memory = _memoryBarrier;
+            DependencyInfo info = new()
+            {
+                SType = StructureType.DependencyInfo,
+                MemoryBarrierCount = 1,
+                PMemoryBarriers = &memory,
+            };
 
-        _vk.CmdPipelineBarrier2(commandBuffer, &info);
+            _vk.CmdPipelineBarrier2(commandBuffer, &info);
+        }
+        else
+        {
+            // The same dependency in the form Vulkan 1.1 understands: one memory barrier with the
+            // stage and access masks translated down. A wider mask is always safe, so anything the
+            // translation does not know is folded into the widest stage and access rather than
+            // dropped.
+            MemoryBarrier barrier = new()
+            {
+                SType = StructureType.MemoryBarrier,
+                SrcAccessMask = ToAccessFlags(_memoryBarrier.SrcAccessMask),
+                DstAccessMask = ToAccessFlags(_memoryBarrier.DstAccessMask),
+            };
+
+            _vk.CmdPipelineBarrier(
+                commandBuffer,
+                ToStageFlags(_memoryBarrier.SrcStageMask),
+                ToStageFlags(_memoryBarrier.DstStageMask),
+                0,
+                1,
+                &barrier,
+                0,
+                null,
+                0,
+                null);
+        }
+
         Reset();
     }
 
@@ -136,5 +176,140 @@ internal sealed unsafe class VulkanBarrierBatcher
     {
         _hasMemoryBarrier = false;
         _memoryBarrier = default;
+    }
+
+    // Synchronisation 2's stage masks carry the same low bits as the original's for every stage the
+    // original had, but the batcher's own stages are acceleration-structure builds, which the original
+    // has no stage for: a build is ordered against the compute stage, which is where its work runs.
+    // Anything left over is ordered against everything, which is wider than needed and always correct,
+    // rather than dropped.
+    private static PipelineStageFlags ToStageFlags(PipelineStageFlags2 stages)
+    {
+        PipelineStageFlags mapped = 0;
+
+        if (stages.HasFlag(PipelineStageFlags2.TopOfPipeBit)) mapped |= PipelineStageFlags.TopOfPipeBit;
+        if (stages.HasFlag(PipelineStageFlags2.DrawIndirectBit)) mapped |= PipelineStageFlags.DrawIndirectBit;
+        if (stages.HasFlag(PipelineStageFlags2.VertexInputBit)) mapped |= PipelineStageFlags.VertexInputBit;
+        if (stages.HasFlag(PipelineStageFlags2.VertexShaderBit)) mapped |= PipelineStageFlags.VertexShaderBit;
+        if (stages.HasFlag(PipelineStageFlags2.TessellationControlShaderBit)) mapped |= PipelineStageFlags.TessellationControlShaderBit;
+        if (stages.HasFlag(PipelineStageFlags2.TessellationEvaluationShaderBit)) mapped |= PipelineStageFlags.TessellationEvaluationShaderBit;
+        if (stages.HasFlag(PipelineStageFlags2.GeometryShaderBit)) mapped |= PipelineStageFlags.GeometryShaderBit;
+        if (stages.HasFlag(PipelineStageFlags2.FragmentShaderBit)) mapped |= PipelineStageFlags.FragmentShaderBit;
+        if (stages.HasFlag(PipelineStageFlags2.EarlyFragmentTestsBit)) mapped |= PipelineStageFlags.EarlyFragmentTestsBit;
+        if (stages.HasFlag(PipelineStageFlags2.LateFragmentTestsBit)) mapped |= PipelineStageFlags.LateFragmentTestsBit;
+        if (stages.HasFlag(PipelineStageFlags2.ColorAttachmentOutputBit)) mapped |= PipelineStageFlags.ColorAttachmentOutputBit;
+        if (stages.HasFlag(PipelineStageFlags2.ComputeShaderBit)) mapped |= PipelineStageFlags.ComputeShaderBit;
+        if (stages.HasFlag(PipelineStageFlags2.TransferBit)) mapped |= PipelineStageFlags.TransferBit;
+        if (stages.HasFlag(PipelineStageFlags2.BottomOfPipeBit)) mapped |= PipelineStageFlags.BottomOfPipeBit;
+        if (stages.HasFlag(PipelineStageFlags2.HostBit)) mapped |= PipelineStageFlags.HostBit;
+        if (stages.HasFlag(PipelineStageFlags2.AllGraphicsBit)) mapped |= PipelineStageFlags.AllGraphicsBit;
+        if (stages.HasFlag(PipelineStageFlags2.AllCommandsBit)) mapped |= PipelineStageFlags.AllCommandsBit;
+
+        // Synchronisation 2's aliases of the transfer stage, which the original spells one way.
+        if (stages.HasFlag(PipelineStageFlags2.CopyBit)) mapped |= PipelineStageFlags.TransferBit;
+        if (stages.HasFlag(PipelineStageFlags2.ResolveBit)) mapped |= PipelineStageFlags.TransferBit;
+        if (stages.HasFlag(PipelineStageFlags2.BlitBit)) mapped |= PipelineStageFlags.TransferBit;
+        if (stages.HasFlag(PipelineStageFlags2.ClearBit)) mapped |= PipelineStageFlags.TransferBit;
+
+        // No original stage exists for an acceleration-structure build or a ray-tracing shader: both
+        // run where compute runs, so that is the stage they are ordered against.
+        if (stages.HasFlag(PipelineStageFlags2.AccelerationStructureBuildBitKhr)) mapped |= PipelineStageFlags.ComputeShaderBit;
+        if (stages.HasFlag(PipelineStageFlags2.RayTracingShaderBitKhr)) mapped |= PipelineStageFlags.ComputeShaderBit;
+        if (stages.HasFlag(PipelineStageFlags2.AccelerationStructureCopyBitKhr)) mapped |= PipelineStageFlags.TransferBit;
+
+        PipelineStageFlags2 known =
+            PipelineStageFlags2.TopOfPipeBit
+            | PipelineStageFlags2.DrawIndirectBit
+            | PipelineStageFlags2.VertexInputBit
+            | PipelineStageFlags2.VertexShaderBit
+            | PipelineStageFlags2.TessellationControlShaderBit
+            | PipelineStageFlags2.TessellationEvaluationShaderBit
+            | PipelineStageFlags2.GeometryShaderBit
+            | PipelineStageFlags2.FragmentShaderBit
+            | PipelineStageFlags2.EarlyFragmentTestsBit
+            | PipelineStageFlags2.LateFragmentTestsBit
+            | PipelineStageFlags2.ColorAttachmentOutputBit
+            | PipelineStageFlags2.ComputeShaderBit
+            | PipelineStageFlags2.TransferBit
+            | PipelineStageFlags2.BottomOfPipeBit
+            | PipelineStageFlags2.HostBit
+            | PipelineStageFlags2.AllGraphicsBit
+            | PipelineStageFlags2.AllCommandsBit
+            | PipelineStageFlags2.CopyBit
+            | PipelineStageFlags2.ResolveBit
+            | PipelineStageFlags2.BlitBit
+            | PipelineStageFlags2.ClearBit
+            | PipelineStageFlags2.AccelerationStructureBuildBitKhr
+            | PipelineStageFlags2.RayTracingShaderBitKhr
+            | PipelineStageFlags2.AccelerationStructureCopyBitKhr;
+
+        if ((stages & ~known) != 0)
+        {
+            mapped |= PipelineStageFlags.AllCommandsBit;
+        }
+
+        return mapped;
+    }
+
+    // The same translation for access masks. An acceleration structure is read and written through
+    // shader accesses in the original API, which has no access bit of its own for one.
+    private static AccessFlags ToAccessFlags(AccessFlags2 access)
+    {
+        AccessFlags mapped = 0;
+
+        if (access.HasFlag(AccessFlags2.IndirectCommandReadBit)) mapped |= AccessFlags.IndirectCommandReadBit;
+        if (access.HasFlag(AccessFlags2.IndexReadBit)) mapped |= AccessFlags.IndexReadBit;
+        if (access.HasFlag(AccessFlags2.VertexAttributeReadBit)) mapped |= AccessFlags.VertexAttributeReadBit;
+        if (access.HasFlag(AccessFlags2.UniformReadBit)) mapped |= AccessFlags.UniformReadBit;
+        if (access.HasFlag(AccessFlags2.InputAttachmentReadBit)) mapped |= AccessFlags.InputAttachmentReadBit;
+        if (access.HasFlag(AccessFlags2.ShaderReadBit)) mapped |= AccessFlags.ShaderReadBit;
+        if (access.HasFlag(AccessFlags2.ShaderWriteBit)) mapped |= AccessFlags.ShaderWriteBit;
+        if (access.HasFlag(AccessFlags2.ColorAttachmentReadBit)) mapped |= AccessFlags.ColorAttachmentReadBit;
+        if (access.HasFlag(AccessFlags2.ColorAttachmentWriteBit)) mapped |= AccessFlags.ColorAttachmentWriteBit;
+        if (access.HasFlag(AccessFlags2.DepthStencilAttachmentReadBit)) mapped |= AccessFlags.DepthStencilAttachmentReadBit;
+        if (access.HasFlag(AccessFlags2.DepthStencilAttachmentWriteBit)) mapped |= AccessFlags.DepthStencilAttachmentWriteBit;
+        if (access.HasFlag(AccessFlags2.TransferReadBit)) mapped |= AccessFlags.TransferReadBit;
+        if (access.HasFlag(AccessFlags2.TransferWriteBit)) mapped |= AccessFlags.TransferWriteBit;
+        if (access.HasFlag(AccessFlags2.HostReadBit)) mapped |= AccessFlags.HostReadBit;
+        if (access.HasFlag(AccessFlags2.HostWriteBit)) mapped |= AccessFlags.HostWriteBit;
+        if (access.HasFlag(AccessFlags2.MemoryReadBit)) mapped |= AccessFlags.MemoryReadBit;
+        if (access.HasFlag(AccessFlags2.MemoryWriteBit)) mapped |= AccessFlags.MemoryWriteBit;
+
+        if (access.HasFlag(AccessFlags2.AccelerationStructureReadBitKhr)) mapped |= AccessFlags.ShaderReadBit;
+        if (access.HasFlag(AccessFlags2.AccelerationStructureWriteBitKhr)) mapped |= AccessFlags.ShaderWriteBit;
+        if (access.HasFlag(AccessFlags2.ShaderSampledReadBit)) mapped |= AccessFlags.ShaderReadBit;
+        if (access.HasFlag(AccessFlags2.ShaderStorageReadBit)) mapped |= AccessFlags.ShaderReadBit;
+        if (access.HasFlag(AccessFlags2.ShaderStorageWriteBit)) mapped |= AccessFlags.ShaderWriteBit;
+
+        AccessFlags2 known =
+            AccessFlags2.IndirectCommandReadBit
+            | AccessFlags2.IndexReadBit
+            | AccessFlags2.VertexAttributeReadBit
+            | AccessFlags2.UniformReadBit
+            | AccessFlags2.InputAttachmentReadBit
+            | AccessFlags2.ShaderReadBit
+            | AccessFlags2.ShaderWriteBit
+            | AccessFlags2.ColorAttachmentReadBit
+            | AccessFlags2.ColorAttachmentWriteBit
+            | AccessFlags2.DepthStencilAttachmentReadBit
+            | AccessFlags2.DepthStencilAttachmentWriteBit
+            | AccessFlags2.TransferReadBit
+            | AccessFlags2.TransferWriteBit
+            | AccessFlags2.HostReadBit
+            | AccessFlags2.HostWriteBit
+            | AccessFlags2.MemoryReadBit
+            | AccessFlags2.MemoryWriteBit
+            | AccessFlags2.AccelerationStructureReadBitKhr
+            | AccessFlags2.AccelerationStructureWriteBitKhr
+            | AccessFlags2.ShaderSampledReadBit
+            | AccessFlags2.ShaderStorageReadBit
+            | AccessFlags2.ShaderStorageWriteBit;
+
+        if ((access & ~known) != 0)
+        {
+            mapped |= AccessFlags.MemoryReadBit | AccessFlags.MemoryWriteBit;
+        }
+
+        return mapped;
     }
 }

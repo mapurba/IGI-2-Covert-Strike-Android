@@ -166,14 +166,35 @@ internal sealed unsafe class VulkanInstance : IDisposable
 
     private Instance CreateInstance(List<string> extensions, bool withValidationLayer, bool withPortability)
     {
-        // Vulkan 1.3 only: the Android build requires a 1.3 loader. Dynamic rendering and
-        // synchronisation-2 barriers are core in 1.3; there is no 1.2 fallback.
+        // Vulkan 1.3 where the loader offers it, 1.1 where it does not. Dynamic rendering and
+        // synchronisation-2 barriers are core in 1.3, but every 1.3 feature is capability-gated
+        // behind the probe, so nothing below assumes the instance version: a 1.1 loader still gets
+        // a working backend on the render-pass path with the old barriers. A loader older than 1.1
+        // has no vkEnumerateInstanceVersion to ask and no vkGetPhysicalDeviceFeatures2 to probe
+        // with, so that is still refused.
+        //
+        // On Android the loader is usually 1.3 even where the driver is 1.1 -- the loader version
+        // follows the OS, the driver version follows the GPU -- so a 1.1 Mali device on a current
+        // OS never takes the 1.1 branch. The branch exists for old-OS devices whose loader is 1.1.
         uint supported;
-        if (Vk.EnumerateInstanceVersion(&supported) != Result.Success || supported < Vk.Version13)
+        if (Vk.EnumerateInstanceVersion(&supported) != Result.Success)
         {
-            throw new GraphicsDeviceException("Vulkan 1.3 is required but the loader does not offer it.");
+            throw new GraphicsDeviceException("Vulkan 1.1 is required but the loader does not offer it.");
         }
-        uint apiVersion = Vk.Version13;
+
+        uint apiVersion;
+        if (supported >= Vk.Version13)
+        {
+            apiVersion = Vk.Version13;
+        }
+        else if (supported >= Vk.Version11)
+        {
+            apiVersion = Vk.Version11;
+        }
+        else
+        {
+            throw new GraphicsDeviceException("Vulkan 1.1 is required but the loader does not offer it.");
+        }
 
         nint appName = SilkMarshal.StringToPtr("ProjectIGI");
         nint engineName = SilkMarshal.StringToPtr("ProjectIGI");
