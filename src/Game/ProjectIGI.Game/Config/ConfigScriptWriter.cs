@@ -64,6 +64,8 @@ public static class ConfigScriptWriter
             builder.Call("GOActiveMission", Number(profile.ActiveMission));
             builder.Call("GOInMouInv", Number(profile.InvertMouse ? 1 : 0));
             builder.Call("GOInMouSens", Real(profile.MouseSensitivity));
+            builder.Call("GOInGyro", Number(profile.GyroEnabled ? 1 : 0));
+            builder.Call("GOInGyroSens", Real(profile.GyroSensitivity));
 
             foreach (InputBinding binding in profile.Bindings)
             {

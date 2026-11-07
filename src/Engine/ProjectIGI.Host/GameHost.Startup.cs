@@ -97,6 +97,14 @@ public sealed partial class GameHost
         _device.SetPointMips(MaterialCVars.PointMips.Value);
         WhenChanged(MaterialCVars.PointMips, () => _device.SetPointMips(MaterialCVars.PointMips.Value));
 
+        // Texture Quality is the same live re-resolve as the filtering rows above: its bias
+        // rides TextureLodBias.FromSettings, and without this nothing re-applied it when the
+        // cycler moved -- changing it alone did nothing until another row rebuilt the samplers.
+        // WebGPU has no mip-bias sampler state, so there it still samples unbiased; on Vulkan
+        // the bias reaches textures already loaded at once.
+        _device.SetTextureLodBias(TextureLodBias.FromSettings());
+        WhenChanged(MaterialCVars.TextureQuality, () => _device.SetTextureLodBias(TextureLodBias.FromSettings()));
+
         // The shell's interface and text sizes, kept in force the same way: the statics the layout
         // reads are set from the saved values here -- the console has already loaded settings.cfg by
         // now -- and follow the settings live afterwards. Without this the two sliders were session
