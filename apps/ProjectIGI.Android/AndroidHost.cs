@@ -164,7 +164,10 @@ public static class AndroidHost
                 GraphicsPresetRegistry.Default.Apply(GraphicsPreset.Vanilla);
                 FrameCVars.MissionWarmUp.Value = 25;
                 DisplayCVars.Renderer.Value = RendererBackend.Vulkan;
-                ReconstructionCVars.FrameLimit.Value = 30;
+
+                // Uncapped by default: the 30 fps cap's fixed 33.3 ms cadence stuttered against the
+                // display's vsync grid, so a fresh install runs as fast as the device goes.
+                ReconstructionCVars.FrameLimit.Value = 0;
 
                 // Phones render far below native by default: a full-resolution 2400x1080
                 // frame is too much for a mid-range mobile GPU through WebGPU (10-20 fps).

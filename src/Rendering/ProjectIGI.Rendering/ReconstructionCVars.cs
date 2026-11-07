@@ -225,7 +225,7 @@ public static class ReconstructionCVars
     /// <summary>A frame-rate cap the driver enforces through Reflex, or nought for none.</summary>
     public static readonly NumericCVar<int> FrameLimit = CVar.Int(
         "r_frame_limit",
-        30,
+        0,
         0,
         1000,
         CVarOptions.Archive,

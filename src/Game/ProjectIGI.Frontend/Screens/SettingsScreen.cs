@@ -283,10 +283,10 @@ public sealed class SettingsScreen : ShellScreen
         configStack.AddChild(new GroupHeader(theme, "Graphics") { Margin = new Thickness(0f, 18f, 0f, 4f) });
 
         // ── Option 5: Max Frame Rate (FPS Cap) ───────────────────────────
-        // The default is 30: the CVar's own default and the first-run value, and the loop holds it
-        // strictly (see BeginFramePass). A value the cycler does not offer shows the nearest offered
-        // cap rather than claiming Uncapped; the stored value itself is left alone until a cap is
-        // picked.
+        // The default is uncapped (0): the CVar's own default and the first-run value, and the loop
+        // holds a picked cap strictly (see BeginFramePass). A value the cycler does not offer shows
+        // the nearest offered cap rather than claiming Uncapped; the stored value itself is left alone
+        // until a cap is picked.
         int currentFps = ReconstructionCVars.FrameLimit.Value;
         int selectedFpsIndex = Array.IndexOf(FpsCapValues, currentFps);
         if (selectedFpsIndex < 0)
