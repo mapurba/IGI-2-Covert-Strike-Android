@@ -106,6 +106,8 @@ public sealed class ConfigScript
         "GOActiveMission",
         "GOInMouInv",
         "GOInMouSens",
+        "GOInGyro",
+        "GOInGyroSens",
         "GOInRemap",
         "GOGfxDisp",
         "GOGfxDevice",
@@ -172,6 +174,8 @@ public sealed class ConfigScript
             natives.RegisterFunction("GOActiveMission", c => OnProfile(p => p.ActiveMission = c.GetInt32(0)), 1);
             natives.RegisterFunction("GOInMouInv", c => OnProfile(p => p.InvertMouse = c.GetInt32(0) != 0), 1);
             natives.RegisterFunction("GOInMouSens", c => OnProfile(p => p.MouseSensitivity = c.GetSingle(0)), 1);
+            natives.RegisterFunction("GOInGyro", c => OnProfile(p => p.GyroEnabled = c.GetInt32(0) != 0), 1);
+            natives.RegisterFunction("GOInGyroSens", c => OnProfile(p => p.GyroSensitivity = c.GetSingle(0)), 1);
 
             natives.RegisterFunction("GOInRemap", c => OnProfile(p => p.Bindings.Add(
                 new InputBinding(NameOf(c.GetInt32(0)), NameOf(c.GetInt32(1)), NameOf(c.GetInt32(2))))), 3);

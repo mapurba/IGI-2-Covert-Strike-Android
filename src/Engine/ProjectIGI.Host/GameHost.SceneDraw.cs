@@ -467,7 +467,13 @@ public sealed partial class GameHost
             }
         }
 
-        if (_storm is { IsActive: true } storm)
+        // The Weather toggle gates every weather draw -- the storm, the original's own
+        // weather, its rain band and its snow. It used to gate only the remastered
+        // renderers (_rain/_snow/_storm) through ApplyWeatherSettings, so on vanilla --
+        // where the original's weather draws instead -- turning it off changed nothing
+        // and the rain kept falling.
+        bool weatherOn = WeatherCVars.WeatherEnabled.Value;
+        if (weatherOn && _storm is { IsActive: true } storm)
         {
             // Direction and colour from the one effective sun the deferred pass shades with, and
             // the fill from the sky the deferred lighting itself shades with, averaged over every
@@ -500,12 +506,12 @@ public sealed partial class GameHost
                 // units, so the drops never sink below a faint grey whatever the night.
                 RainVeilDisplay / MathF.Max(_device.SceneExposure, 1e-3f));
         }
-        else if (GraphicsPresetRegistry.Default.Current == GraphicsPreset.Vanilla && _retailWeather is { } retailWeather)
+        else if (weatherOn && GraphicsPresetRegistry.Default.Current == GraphicsPreset.Vanilla && _retailWeather is { } retailWeather)
         {
             // The original's look draws the level's weather as the original does, stopping on whatever is above the ground.
             retailWeather.Draw(new WeatherFrame(eye, projection, _window.Height, _mission.EffectWalls, _loop.Clock.TickCount));
         }
-        else if (_storm is not { Enabled: true } && _rain is { IsWeatherEnabled: true } rain)
+        else if (weatherOn && _storm is not { Enabled: true } && _rain is { IsWeatherEnabled: true } rain)
         {
             // The original's band, drawn only where the storm is not the renderer in charge.
             // Enabled is the question, not IsActive: Enabled says which of the two owns the
@@ -520,7 +526,7 @@ public sealed partial class GameHost
 
         // Snow uses the same authored building shells and weather band, but renders small,
         // drifting flakes instead of rain droplets.
-        if (_snow is { IsWeatherEnabled: true } snow
+        if (weatherOn && _snow is { IsWeatherEnabled: true } snow
             && !(GraphicsPresetRegistry.Default.Current == GraphicsPreset.Vanilla && _retailWeather is not null))
         {
             snow.Indoors = cameraIndoors;
