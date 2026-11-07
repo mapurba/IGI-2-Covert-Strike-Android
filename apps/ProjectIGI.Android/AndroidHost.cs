@@ -382,6 +382,13 @@ public static class AndroidHost
         return _gameHost is { } host && host.KeyboardRequested ? 1 : 0;
     }
 
+    /// <summary>Whether the retail main menu is up (not pause, no mission running) — the Android side polls this to show the socials button.</summary>
+    [UnmanagedCallersOnly(EntryPoint = "IsMainMenu")]
+    public static int IsMainMenu()
+    {
+        return _gameHost is { } host && host.IsOnMainMenu ? 1 : 0;
+    }
+
     /// <summary>Sets the soft-keyboard request flag (the Android side clears it when Back dismisses the keyboard).</summary>
     [UnmanagedCallersOnly(EntryPoint = "SetKeyboardRequested")]
     public static void SetKeyboardRequested(int value)

@@ -77,6 +77,12 @@ public sealed partial class GameHost : IDisposable
     /// </summary>
     public bool KeyboardRequested { get; set; }
 
+    /// <summary>
+    /// Gets whether the retail main menu is up over no mission (not the pause menu).
+    /// The Android side polls this to show the socials button on the main menu only.
+    /// </summary>
+    public bool IsOnMainMenu => _menuFlow.MenuMode && !_menuFlow.PauseMenu && _session.Mission == null;
+
     // --- Environment, supplied by the composition root ---
     private readonly IPlatformHost _platform;
     private readonly IWorkScheduler _work;

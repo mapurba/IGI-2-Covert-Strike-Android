@@ -1,6 +1,8 @@
 package com.projectigi2.app;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -25,6 +27,7 @@ import android.graphics.BlendMode;
 import android.graphics.BlendModeColorFilter;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
@@ -44,6 +47,7 @@ import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -103,6 +107,15 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private Handler imeHandler;
     private Runnable imePoller;
     private boolean imeShown = false;
+    // Socials: a small button in the top-left corner of the file-picker screen and
+    // the main menu, opening a popup with Discord + Reddit links. A native View, not
+    // a managed overlay: the retail menu is drawn from menu data, and there is no
+    // managed-to-Java channel to fire an ACTION_VIEW intent from C#.
+    private ImageButton socialsButton;
+    private AlertDialog socialsDialog;
+    private boolean socialsButtonShown = false;
+    private static final String DISCORD_URL = "https://discord.gg/hSyz7KWZrg";
+    private static final String REDDIT_URL = "https://www.reddit.com/user/project_igi_porter";
     // True while this Activity is in the foreground. The quit watcher uses it to tell a Quit
     // in the main menu (foreground, game stops) from tabbing out (backgrounded, game stops too).
     private boolean isResumed = false;
@@ -358,6 +371,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
         rootLayout.addView(splashLayout, new FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+
+        // Socials button: top-left, above the picker card and the game surface alike,
+        // so one button serves both screens. Its visibility is polled below.
+        setupSocialsButton();
 
         setContentView(rootLayout);
 
@@ -1159,6 +1176,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             @Override
             public void run() {
                 updateImeVisibility();
+                updateSocialsButtonVisibility();
                 if (imeHandler != null) {
                     imeHandler.postDelayed(this, 250);
                 }
@@ -1213,6 +1231,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         if (imeHandler != null && imePoller != null) {
             imeHandler.removeCallbacks(imePoller);
         }
+        if (socialsDialog != null && socialsDialog.isShowing()) {
+            socialsDialog.dismiss();
+        }
         if (sensorManager != null && gyroListener != null) {
             sensorManager.unregisterListener(gyroListener);
         }
@@ -1228,6 +1249,150 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         if (gameQuitRequested) {
             Log.i(TAG, "Game quit: terminating process so the next launch is fresh");
             android.os.Process.killProcess(android.os.Process.myPid());
+        }
+    }
+
+    private void setupSocialsButton() {
+        float density = getResources().getDisplayMetrics().density;
+        int size = (int)(48 * density);
+        socialsButton = new ImageButton(this);
+        socialsButton.setImageResource(android.R.drawable.ic_menu_share);
+        socialsButton.setColorFilter(Color.rgb(190, 215, 255));
+        socialsButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        socialsButton.setPadding((int)(10 * density), (int)(10 * density), (int)(10 * density), (int)(10 * density));
+        socialsButton.setContentDescription("Socials");
+
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.rgb(20, 35, 60));
+        bg.setStroke((int)(1.5f * density), Color.rgb(80, 160, 255));
+        bg.setCornerRadius(8 * density);
+        socialsButton.setBackground(bg);
+
+        // The main-menu logo fills roughly the top quarter of the screen (see the
+        // reference menu screenshot), so the button sits just below it, in the empty
+        // left column — top-left as asked, without covering the logo.
+        int topMargin = (int)(getResources().getDisplayMetrics().heightPixels * 0.28);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(size, size);
+        params.gravity = Gravity.TOP | Gravity.START;
+        params.topMargin = topMargin;
+        params.leftMargin = (int)(12 * density);
+        socialsButton.setOnClickListener(v -> showSocialsPopup());
+        rootLayout.addView(socialsButton, params);
+        socialsButton.setVisibility(View.VISIBLE);
+        socialsButtonShown = true;
+    }
+
+    private void updateSocialsButtonVisibility() {
+        if (socialsButton == null) {
+            return;
+        }
+        // On the file-picker screen while the splash is up; on the main menu once the
+        // game is running (MenuMode, no pause, no mission). Hidden in-mission, while
+        // loading, on the pause menu, and everywhere else.
+        boolean show = splashLayout == null || splashLayout.getVisibility() == View.VISIBLE;
+        if (!show && isGameStarted) {
+            try {
+                show = NativeEngine.nativeIsMainMenu();
+            } catch (Throwable ignored) {
+                // Native library not loaded yet: stay hidden until the game is up.
+                show = false;
+            }
+        }
+        if (show != socialsButtonShown) {
+            socialsButtonShown = show;
+            socialsButton.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    private void showSocialsPopup() {
+        if (socialsDialog != null && socialsDialog.isShowing()) {
+            return;
+        }
+        float density = getResources().getDisplayMetrics().density;
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding((int)(20 * density), (int)(16 * density), (int)(20 * density), (int)(16 * density));
+
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.argb(225, 10, 16, 30));
+        bg.setStroke((int)(2 * density), Color.rgb(80, 160, 255));
+        bg.setCornerRadius(10 * density);
+        layout.setBackground(bg);
+
+        // Title row: SOCIALS + close X.
+        LinearLayout titleRow = new LinearLayout(this);
+        titleRow.setOrientation(LinearLayout.HORIZONTAL);
+        titleRow.setGravity(Gravity.CENTER_VERTICAL);
+        TextView title = new TextView(this);
+        title.setText("SOCIALS");
+        title.setTextColor(Color.rgb(80, 160, 255));
+        title.setTextSize(16);
+        title.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+        title.setLetterSpacing(0.12f);
+        LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(
+            0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        titleRow.addView(title, titleLp);
+        TextView close = new TextView(this);
+        close.setText("\u2715");
+        close.setTextColor(Color.rgb(190, 215, 255));
+        close.setTextSize(18);
+        close.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+        close.setPadding((int)(12 * density), 0, 0, 0);
+        close.setOnClickListener(v -> {
+            if (socialsDialog != null) socialsDialog.dismiss();
+        });
+        titleRow.addView(close);
+        LinearLayout.LayoutParams titleRowLp = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        titleRowLp.bottomMargin = (int)(16 * density);
+        layout.addView(titleRow, titleRowLp);
+
+        layout.addView(makeSocialButton("DISCORD", "discord.gg/hSyz7KWZrg", DISCORD_URL, density));
+        layout.addView(makeSocialButton("REDDIT", "u/project_igi_porter", REDDIT_URL, density));
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(layout);
+        builder.setCancelable(true);
+        socialsDialog = builder.create();
+        // Transparent window so only the themed card shows, not the stock dialog frame.
+        if (socialsDialog.getWindow() != null) {
+            socialsDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+        socialsDialog.show();
+    }
+
+    private Button makeSocialButton(String name, String handle, final String url, float density) {
+        Button button = new Button(this);
+        button.setText(name + "\n" + handle);
+        button.setTextSize(12);
+        button.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+        button.setTextColor(Color.rgb(190, 215, 255));
+        button.setGravity(Gravity.CENTER);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.rgb(20, 35, 60));
+        bg.setStroke((int)(1.5f * density), Color.rgb(80, 160, 255));
+        bg.setCornerRadius(6 * density);
+        button.setBackground(bg);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+            (int)(280 * density), LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.bottomMargin = (int)(10 * density);
+        button.setOnClickListener(v -> openSocialUrl(url));
+        button.setLayoutParams(lp);
+        return button;
+    }
+
+    private void openSocialUrl(String url) {
+        if (socialsDialog != null && socialsDialog.isShowing()) {
+            socialsDialog.dismiss();
+        }
+        try {
+            // ACTION_VIEW lets Android pick the installed app (Discord / Reddit) when
+            // present and falls back to the browser otherwise.
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (ActivityNotFoundException e) {
+            Log.w(TAG, "No app can open " + url, e);
+            Toast.makeText(this, "No app can open this link", Toast.LENGTH_SHORT).show();
         }
     }
 
