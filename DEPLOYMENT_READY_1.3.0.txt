@@ -1,0 +1,146 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║         IGI-2 COVERT STRIKE: THE LONG DESCENT - EPIC MISSION              ║
+║                        PHASE 4 DEPLOYMENT READY                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+BUILD INFORMATION
+─────────────────────────────────────────────────────────────────────────────
+  Version:                    1.3.0
+  Build Date:                 Sun Nov  8 21:06:57 UTC 2026
+  Mission ID:                 99
+  Mission Name:               The Long Descent (Epic)
+  Build Number:               1794172017
+
+TERRAIN SPECIFICATIONS
+─────────────────────────────────────────────────────────────────────────────
+  Grid Size:                  1024 × 1024 units (EPIC SCALE)
+  Elevation Range:            0 - 160 metres
+  Player Spawn:               Mountain lookout (100, 100, 160)
+  Compound Center:            Military base (400, 600, 20)
+  Extraction Point:           Lake shore (800, 900, 2)
+
+MISSION CONTENT
+─────────────────────────────────────────────────────────────────────────────
+  Armed Guards:               15 military personnel
+  Perimeter Guards:           8 (gate, towers, walls)
+  Interior Guards:            5 (vault, barracks, command)
+  Mobile Patrols:             2 (dynamic threats)
+  Difficulty Level:           Agent (Normal)
+  Time Limit:                 45 minutes mission / 50 minutes extraction
+
+PLAYER LOADOUT
+─────────────────────────────────────────────────────────────────────────────
+  Primary Weapon:             Sniper Rifle (180 rounds)
+  Secondary Weapon:           Assault Rifle (240 rounds)
+  Sidearm:                    Pistol (90 rounds)
+  Melee Weapon:               Knife
+  Total Ammunition:           510 rounds + knife
+
+FILE SIZES
+─────────────────────────────────────────────────────────────────────────────
+  mission.qvm:                491 bytes
+  objects.qvm:                8418 bytes (15 guards)
+  heightmaps.res:             4.1MiB
+  Terrain Preview (PGM):      ~1.1 MB (grayscale height visualization)
+  APK Size:                   64MiB
+  Total Mission Size:         ~5.2 MB
+
+FILE LOCATIONS
+─────────────────────────────────────────────────────────────────────────────
+  Generated Mission Files:    /tmp/long-descent-epic-1.3.0-20261108-210642/
+  APK Path:                   ./app/build/outputs/apk/release/app-release.apk
+  APK Assets:                 app/android/app/src/main/assets/missions/
+
+DEPLOYMENT OPTIONS
+─────────────────────────────────────────────────────────────────────────────
+
+Option 1: ADB Deployment (Recommended for Testing)
+  $ ./deploy_mission.sh /tmp/long-descent-epic-1.3.0-20261108-210642/
+  
+  This deploys mission files directly to device storage:
+  /sdcard/Documents/ProjectIGI2/MISSIONS/location9/level9/
+
+Option 2: APK Installation
+  $ adb install -r app/android/app/build/outputs/apk/debug/*.apk
+  
+  This installs the game with mission files bundled.
+
+Option 3: Manual ADB Push
+  $ adb push /tmp/long-descent-epic-1.3.0-20261108-210642/mission.qvm \
+      /sdcard/Documents/ProjectIGI2/MISSIONS/location9/level9/
+  $ adb push /tmp/long-descent-epic-1.3.0-20261108-210642/objects.qvm \
+      /sdcard/Documents/ProjectIGI2/MISSIONS/location9/level9/
+  $ adb push /tmp/long-descent-epic-1.3.0-20261108-210642/heightmaps.res \
+      /sdcard/Documents/ProjectIGI2/MISSIONS/location9/level9/level/
+
+POST-DEPLOYMENT VERIFICATION
+─────────────────────────────────────────────────────────────────────────────
+1. Close game completely
+2. Restart ProjectIGI 2
+3. Go to Campaign → Mission Selection
+4. Verify "Mission 99: The Long Descent" appears
+5. Select mission and start
+6. Confirm player spawns at mountain lookout
+7. Test AI and weapon systems
+
+MISSION FEATURES (PHASE 4)
+─────────────────────────────────────────────────────────────────────────────
+✓ Epic-scale 1024×1024 terrain
+✓ 15 strategically positioned guards
+✓ Tactical AI squad formation
+✓ Multiple weapon types (sniper/rifle/pistol/knife)
+✓ Perimeter and interior security
+✓ Extraction objective marker
+✓ Professional military compound theme
+✓ Difficulty scaling for balanced gameplay
+✓ Comprehensive mission briefing
+
+PHASE 5 ROADMAP (Future Enhancement)
+─────────────────────────────────────────────────────────────────────────────
+□ Objective trigger zones (chip retrieval, extraction validation)
+□ Win/failure conditions and scoring
+□ Guard patrol waypoints with dynamic routes
+□ 3D compound building structures
+□ Security systems (cameras, alarms, comms)
+□ In-game mission briefing screen
+□ Multiple difficulty presets
+□ Vehicle support (jeeps, trucks)
+□ Day/night cycle and weather
+□ Radio communication audio alerts
+□ Mission replay and statistics
+
+TROUBLESHOOTING
+─────────────────────────────────────────────────────────────────────────────
+
+Q: Mission doesn't appear in campaign list
+A: Ensure files are in correct directory:
+   /sdcard/Documents/ProjectIGI2/MISSIONS/location9/level9/
+   Restart game completely after deployment.
+
+Q: Game crashes when loading mission
+A: Check for file corruption or permission issues:
+   $ adb shell ls -la /sdcard/Documents/ProjectIGI2/MISSIONS/location9/level9/
+
+Q: Guards not spawning
+A: Verify objects.qvm is valid by checking file size:
+   Expected: ~8418 bytes
+   Check device logs: $ adb logcat | grep -i mission
+
+Q: Weapons not working
+A: Verify weapon symbol names exist in game registry.
+   May need to adjust: SniperRifle, AssaultRifle, Pistol
+
+═════════════════════════════════════════════════════════════════════════════
+
+Mission generated and verified successfully!
+
+Next Steps:
+1. Deploy mission files using: ./deploy_mission.sh /tmp/long-descent-epic-1.3.0-20261108-210642/
+2. Restart the game on your Android device
+3. Navigate to Campaign and start Mission 99
+4. Report feedback for Phase 5 enhancements
+
+Generated: Sun Nov  8 21:06:57 UTC 2026
+Build Script: build_epic_mission.sh
+═════════════════════════════════════════════════════════════════════════════
+
