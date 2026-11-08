@@ -1,0 +1,53 @@
+--- a/apps/ProjectIGI.TerrainPrototype/Program.cs
++++ b/apps/ProjectIGI.TerrainPrototype/Program.cs
+@@ -16,13 +16,14 @@ internal static class Program
+     private static int Main(string[] args)
+     {
+         if (args.Length == 1 && args[0] == "--self-test")
+         {
+             SelfTest();
+             Console.WriteLine("Terrain prototype self-test passed.");
+             return 0;
+         }
+ 
+         if (args.Length != 1 || args[0].StartsWith('-'))
+         {
+             Console.Error.WriteLine("Usage: dotnet run --project apps/ProjectIGI.TerrainPrototype -- <new-output-directory>");
+             Console.Error.WriteLine("       dotnet run --project apps/ProjectIGI.TerrainPrototype -- --self-test");
+             return 1;
+         }
+ 
+         string output = Path.GetFullPath(args[0]);
+@@ -32,14 +33,17 @@ internal static class Program
+             return 1;
+         }
+ 
+         byte[] heightmap = CreateHeightmap();
+         byte[] archive = CreateArchive(heightmap);
+         VerifyArchive(archive, heightmap);
+         byte[] preview = CreatePreview(heightmap);
++        byte[] missionScript = CreateMissionScript();
+ 
+         Directory.CreateDirectory(output);
+         using (FileStream file = new(Path.Combine(output, "heightmaps.res"), FileMode.CreateNew))
+         {
+             file.Write(archive);
+         }
+ 
+         using (FileStream file = new(Path.Combine(output, "terrain-preview.pgm"), FileMode.CreateNew))
+         {
+             file.Write(preview);
++        }
++
++        using (FileStream file = new(Path.Combine(output, "mission.qvm"), FileMode.CreateNew))
++        {
++            file.Write(missionScript);
+         }
+ 
+         Console.WriteLine($"Created {output}");
+         Console.WriteLine("heightmaps.res: original prototype terrain tile");
+         Console.WriteLine("terrain-preview.pgm: grayscale height preview (bright = high)");
++        Console.WriteLine("mission.qvm: mission definition script");
+         Console.WriteLine("This is an authoring prototype, not a playable mission.");
+         return 0;
+     }

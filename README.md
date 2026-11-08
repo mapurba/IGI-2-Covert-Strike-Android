@@ -63,6 +63,21 @@ The Android host (`AndroidHost.cs`) runs the I.G.I. 2 title through `TitleCatalo
 
 ---
 
+## Original mission terrain prototype
+
+The first step toward an original mountain, compound and lakeside mission is a deterministic terrain authoring prototype. With the .NET 10 SDK, run:
+
+```bash
+dotnet run --project apps/ProjectIGI.TerrainPrototype -- /path/to/new-output-directory
+dotnet run --project apps/ProjectIGI.TerrainPrototype -- --self-test
+```
+
+The output directory must not already exist. The tool creates `heightmaps.res`, containing a 256 x 256 I.G.I. 2 height tile, and a grayscale `terrain-preview.pgm` image. The intended tile span is 1,200 x 1,200 metres: the northwest plateau is the lookout, the central-eastern plateau is reserved for the compound, and the southeast basin is reserved for the lake. Heights are encoded in engine units (4,096 units per metre).
+
+**This is not a playable level and should not be copied over retail files.** The archive still needs a custom mission definition and `TerrainMap` placement, materials, water, buildings, vegetation, navigation, objectives and a safe Android delivery/loading path. The preview shows height only, not water or finished scenery. The generated archive is checked with the existing readers, but it has not yet been loaded in the game.
+
+---
+
 ## Key Features & Current Build Highlights
 
 - **Decoupled Game Files**: 100% clean repository and APK with no bundled copyrighted game data.

@@ -2,6 +2,7 @@
   <Folder Name="/apps/">
     <Project Path="apps/ProjectIGI.Android/ProjectIGI.Android.csproj" />
     <Project Path="apps/ProjectIGI.Composition/ProjectIGI.Composition.csproj" />
+    <Project Path="apps/ProjectIGI.TerrainPrototype/ProjectIGI.TerrainPrototype.csproj" />
   </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/Audio/">
