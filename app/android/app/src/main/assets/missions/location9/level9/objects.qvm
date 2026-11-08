@@ -1,12 +1,21 @@
 // ============================================================
-// The Long Descent - Level Objects & Gameplay
-// Phase 4: Gameplay Implementation
+// THE LONG DESCENT - EPIC MILITARY COMPOUND MISSION
+// Mission 99: Intelligence Extraction
+// Phase 4 Enhanced: 15-Guard Military Base, 1024x1024 Terrain
 // ============================================================
 
-// --- PLAYER ---
+// MISSION BRIEFING:
+// You are positioned on high ground overlooking an enemy military
+// compound deep in foreign territory. CIA has confirmed a top-secret
+// intelligence chip containing weapon locations is stored in the
+// compound's secure vault. Eliminate or evade the 15-man guard force,
+// locate and extract the chip, and reach the extraction point at
+// the lake. Time is critical.
+
+// --- PLAYER SPAWN & EQUIPMENT ---
 HumanPlayer(
-    Position = (102, 102, 145)
-    Gamma = 180
+    Position = (200, 200, 160)
+    Gamma = 225
     Model = 'player'
     Team = 0
     Weapon = 'SetupWeapons'
@@ -17,75 +26,261 @@ HumanPlayer(
     Carry over weapons from previous mission = FALSE
 );
 
-// --- PLAYER WEAPONS ---
+// Elite operative loadout: long-range + close-quarters + melee
 SetupWeapons()
 {
     GiveWeapon(SniperRifle);
-    SetAmmo(SniperRifle, 150);
+    SetAmmo(SniperRifle, 180);      // Extended sniper ammo for multiple targets
     GiveWeapon(AssaultRifle);
-    SetAmmo(AssaultRifle, 120);
-    GiveWeapon(Knife);
+    SetAmmo(AssaultRifle, 240);     // Full combat load
+    GiveWeapon(Pistol);
+    SetAmmo(Pistol, 90);            // Backup sidearm
+    GiveWeapon(Knife);               // Silent eliminations
 }
 
-// --- GUARDS & AI ---
+// --- MILITARY AI SQUAD (15 GUARDS) ---
+// Formation: Tactical squad with multiple patrol routes
 AISquad(
-    Formation Distance = 3.0
-    SquadType = 1
+    Formation Distance = 5.0        // Realistic military spacing
+    SquadType = 1                    // Tactical coordination mode
+    Aggression Level = 1.2           // Heightened alert
+    Communication Range = 150.0      // Wide tactical comms
 );
 
-// Guard 1: North perimeter
+// 1. North Gate Sentry - Gate entrance monitoring
 HumanSoldier(
-    Position = (276, 204, 16)
-    Gamma = 45
-    Model = 'guard'
-    Team = 1
-    Weapon = 'GuardArmed'
-    Bone Heirachy = 0
-    Stand Animation = 0
-);
-
-HumanSoldier(
-    Position = (346, 244, 16)
-    Gamma = 135
-    Model = 'guard'
-    Team = 1
-    Weapon = 'GuardArmed'
-    Bone Heirachy = 0
-    Stand Animation = 0
-);
-
-HumanSoldier(
-    Position = (306, 284, 16)
-    Gamma = 225
-    Model = 'guard'
-    Team = 1
-    Weapon = 'GuardArmed'
-    Bone Heirachy = 0
-    Stand Animation = 0
-);
-
-HumanSoldier(
-    Position = (306, 244, 29)
+    Position = (750, 1120, 23)
     Gamma = 0
     Model = 'guard'
     Team = 1
     Weapon = 'GuardArmed'
-    Bone Heirachy = 0
+    Bone Hierarchy = 0
     Stand Animation = 0
+    Alert Level = 0.5              // Medium alert
+    Vision Range = 100.0           // Realistic guard vision
 );
 
-// --- GUARD WEAPONS ---
+// 2. North-East Guard Tower - Elevated tower position
+HumanSoldier(
+    Position = (860, 1140, 28)
+    Gamma = 45
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Hierarchy = 0
+    Stand Animation = 0
+    Alert Level = 0.5              // Medium alert
+    Vision Range = 100.0           // Realistic guard vision
+);
+
+// 3. East Wall Patrol - Main eastern perimeter
+HumanSoldier(
+    Position = (890, 1200, 22)
+    Gamma = 90
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Hierarchy = 0
+    Stand Animation = 0
+    Alert Level = 0.5              // Medium alert
+    Vision Range = 100.0           // Realistic guard vision
+);
+
+// 4. South-East Guard - Southeast perimeter
+HumanSoldier(
+    Position = (870, 1280, 23)
+    Gamma = 135
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Hierarchy = 0
+    Stand Animation = 0
+    Alert Level = 0.5              // Medium alert
+    Vision Range = 100.0           // Realistic guard vision
+);
+
+// 5. South Gate - Southern entrance
+HumanSoldier(
+    Position = (800, 1300, 22)
+    Gamma = 180
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Hierarchy = 0
+    Stand Animation = 0
+    Alert Level = 0.5              // Medium alert
+    Vision Range = 100.0           // Realistic guard vision
+);
+
+// 6. South-West Guard - Southwest corner
+HumanSoldier(
+    Position = (730, 1280, 23)
+    Gamma = 225
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Hierarchy = 0
+    Stand Animation = 0
+    Alert Level = 0.5              // Medium alert
+    Vision Range = 100.0           // Realistic guard vision
+);
+
+// 7. West Wall Patrol - Western perimeter
+HumanSoldier(
+    Position = (700, 1200, 22)
+    Gamma = 270
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Hierarchy = 0
+    Stand Animation = 0
+    Alert Level = 0.5              // Medium alert
+    Vision Range = 100.0           // Realistic guard vision
+);
+
+// 8. North-West Guard - Northwest sector
+HumanSoldier(
+    Position = (740, 1140, 23)
+    Gamma = 315
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Hierarchy = 0
+    Stand Animation = 0
+    Alert Level = 0.5              // Medium alert
+    Vision Range = 100.0           // Realistic guard vision
+);
+
+// 9. Main Hall Guard - Interior main corridor
+HumanSoldier(
+    Position = (780, 1190, 25)
+    Gamma = 45
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Hierarchy = 0
+    Stand Animation = 0
+    Alert Level = 0.5              // Medium alert
+    Vision Range = 100.0           // Realistic guard vision
+);
+
+// 10. Vault Guard - Intelligence chip vault
+HumanSoldier(
+    Position = (820, 1210, 32)
+    Gamma = 180
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Hierarchy = 0
+    Stand Animation = 0
+    Alert Level = 0.5              // Medium alert
+    Vision Range = 100.0           // Realistic guard vision
+);
+
+// 11. Barracks Guard - Barracks sector
+HumanSoldier(
+    Position = (760, 1230, 24)
+    Gamma = 90
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Hierarchy = 0
+    Stand Animation = 0
+    Alert Level = 0.5              // Medium alert
+    Vision Range = 100.0           // Realistic guard vision
+);
+
+// 12. Admin Building - Administrative center
+HumanSoldier(
+    Position = (835, 1175, 24)
+    Gamma = 270
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Hierarchy = 0
+    Stand Animation = 0
+    Alert Level = 0.5              // Medium alert
+    Vision Range = 100.0           // Realistic guard vision
+);
+
+// 13. Command Center - Command post
+HumanSoldier(
+    Position = (810, 1160, 28)
+    Gamma = 0
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Hierarchy = 0
+    Stand Animation = 0
+    Alert Level = 0.5              // Medium alert
+    Vision Range = 100.0           // Realistic guard vision
+);
+
+// 14. Patrol 1 - Mobile perimeter patrol
+HumanSoldier(
+    Position = (720, 1100, 22)
+    Gamma = 120
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Hierarchy = 0
+    Stand Animation = 0
+    Alert Level = 0.5              // Medium alert
+    Vision Range = 100.0           // Realistic guard vision
+);
+
+// 15. Patrol 2 - Mobile perimeter patrol
+HumanSoldier(
+    Position = (880, 1300, 22)
+    Gamma = 300
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Hierarchy = 0
+    Stand Animation = 0
+    Alert Level = 0.5              // Medium alert
+    Vision Range = 100.0           // Realistic guard vision
+);
+
+// --- GUARD ARMAMENT ---
 GuardArmed()
 {
-    GiveWeapon(AssaultRifle);
-    SetAmmo(AssaultRifle, 120);
+    GiveWeapon(AssaultRifle);       // Standard military rifle
+    SetAmmo(AssaultRifle, 180);     // Full combat load per guard
+    GiveWeapon(Pistol);             // Backup sidearm
+    SetAmmo(Pistol, 60);            // Secondary ammunition
 }
 
-// --- OBJECTIVES ---
-// Primary: Retrieve intelligence chip from compound locker
-// Secondary: Survive
-// Extraction: Reach the lake
+// --- PRIMARY OBJECTIVES ---
+// Primary: Extract intelligence chip from vault (located in guard at 'Vault Guard' position)
+// Secondary: Minimize casualties (stealth preferred)
+// Extraction: Reach lake shore within time limit
+
+// --- EXTRACTION ZONE ---
+// Location: (1600, 1800, 2)
+// Description: Abandoned dock at lake shore - friendly forces waiting
+// Radius: 30 units for extraction success
+
+// --- ENVIRONMENTAL OVERVIEW ---
+// Terrain: 1024x1024 unit epic map
+// North: Mountain highlands (player spawn ~160m elevation)
+// Center: Military compound with multiple structures
+//   - Guard towers at north and northeast
+//   - Main administrative building
+//   - Barracks and vehicle bay
+//   - Secure vault containing intelligence
+// South: Valley terrain with forest cover
+// East: Lake (extraction point)
+
+// --- MISSION PARAMETERS ---
+Mission Difficulty = AGENT           // Normal operative difficulty
+Time Limit = 45 minutes              // Professional operation window
+Reinforcements = None                // Solo operation - no backup
+Extraction Timeout = 50 minutes      // Must exit before limit
+Success Condition = Chip + Extraction// Retrieve AND extract
+Failure Condition = Mission Capture OR Time Expired
 
 // ============================================================
-// End of Level Objects
+// END MISSION DEFINITION
+// Generated for Phase 4: Professional Military Gameplay
 // ============================================================
