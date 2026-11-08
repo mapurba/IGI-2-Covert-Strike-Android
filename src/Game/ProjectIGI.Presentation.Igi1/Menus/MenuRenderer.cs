@@ -6,6 +6,7 @@ using ProjectIGI.Game.Menus;
 using ProjectIGI.Game.World;
 using ProjectIGI.Presentation.Rendering;
 using ProjectIGI.Rendering;
+using MenuStyle = ProjectIGI.Game.Menus.MenuLayout.MenuStyle;
 
 namespace ProjectIGI.Presentation.Igi1.Menus;
 

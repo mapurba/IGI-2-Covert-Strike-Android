@@ -1,5 +1,6 @@
 using System.Globalization;
 using ProjectIGI.Core.Graphics;
+using ProjectIGI.Game.Player;
 using ProjectIGI.Input;
 using ProjectIGI.Rendering;
 using ProjectIGI.UI;
@@ -576,7 +577,7 @@ public sealed class SettingsScreen : ShellScreen
             Width = 1150f,
             Height = 68f,
         };
-        crosshairColourBtn.Activated += () =>
+        crosshairColourBtn.Activated += _ =>
         {
             int next = (HudCVars.CrosshairColor.Value + 1) % CrosshairPalette.Names.Length;
             HudCVars.CrosshairColor.Value = next;

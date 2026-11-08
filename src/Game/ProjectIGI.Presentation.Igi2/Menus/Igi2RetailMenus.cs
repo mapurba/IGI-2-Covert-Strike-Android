@@ -1,5 +1,6 @@
 using System.IO;
 using ProjectIGI.Core.Configuration;
+using ProjectIGI.Core.Diagnostics;
 using ProjectIGI.Engine.Titles;
 using ProjectIGI.Formats.Sprites;
 using ProjectIGI.Game.Igi2.Config;
@@ -10,6 +11,7 @@ using ProjectIGI.Game.World;
 using ProjectIGI.Presentation.Igi1.Menus;
 using ProjectIGI.Presentation.Rendering;
 using ProjectIGI.Scripting.Runtime;
+using MenuStyle = ProjectIGI.Game.Menus.MenuLayout.MenuStyle;
 
 namespace ProjectIGI.Presentation.Igi2.Menus;
 
@@ -29,6 +31,8 @@ internal sealed class Igi2RetailMenus : IRetailMenus
     /// <param name="request">What the menus are started with.</param>
     public Igi2RetailMenus(in RetailMenusRequest request)
     {
+        RetailMenusRequest capturedRequest = request;
+
         // The loop's registry already holds this title's menu classes under the shared names
         // ("MenuManager" is Igi2MenuManagerTask, and so on), and MenuSystem.Load registers the
         // shared classes under those same names -- without the swap it throws on the first of
@@ -132,7 +136,7 @@ internal sealed class Igi2RetailMenus : IRetailMenus
         config.ApplyGraphics = applied =>
         {
             Igi2GraphicsApplier.Apply(applied);
-            request.SaveSettings?.Invoke();
+            capturedRequest.SaveSettings?.Invoke();
         };
         Igi2GraphicsApplier.SyncFromLive(config);
 
@@ -148,11 +152,11 @@ internal sealed class Igi2RetailMenus : IRetailMenus
             if (string.Equals(name, GameMissionState.SetMissionNative, StringComparison.Ordinal)
                 && !configuration.IsUnlocked(arguments.GetInt32(0)))
             {
-                request.Logger.Warning("Menu", $"Refused to start locked mission {arguments.GetInt32(0)}.");
+                capturedRequest.Logger.Warning("Menu", $"Refused to start locked mission {arguments.GetInt32(0)}.");
                 return QvmValue.FromInt32(0);
             }
 
-            return request.ExternalNatives(name, arguments);
+            return capturedRequest.ExternalNatives(name, arguments);
         };
         menu.Manager.Initialize(menu, _shell, request.Logger);
     }

@@ -689,8 +689,8 @@ public sealed class TouchControls
         {
             // The navigation stick is fixed at the top centre: a finger coming down on it steers
             // the map, and does not become the pointer — the pointer is a second finger.
-            float sdx = point.StartX - ComputerStickRest.X, sdy = point.StartY - ComputerStickRest.Y;
-            if ((sdx * sdx) + (sdy * sdy) <= (ComputerStickReachPixels * 1.5f) * (ComputerStickReachPixels * 1.5f))
+            float computerDx = point.StartX - ComputerStickRest.X, computerDy = point.StartY - ComputerStickRest.Y;
+            if ((computerDx * computerDx) + (computerDy * computerDy) <= (ComputerStickReachPixels * 1.5f) * (ComputerStickReachPixels * 1.5f))
             {
                 return new Role(RoleKind.Stick, null);
             }

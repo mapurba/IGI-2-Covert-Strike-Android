@@ -1,5 +1,6 @@
 using ProjectIGI.Game.Igi1.Config;
 using ProjectIGI.Game.Menus;
+using MenuStyle = ProjectIGI.Game.Menus.MenuLayout.MenuStyle;
 
 namespace ProjectIGI.Presentation.Igi1.Menus;
 

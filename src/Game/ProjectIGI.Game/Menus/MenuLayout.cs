@@ -58,10 +58,10 @@ public static class MenuLayout
     public readonly record struct MenuStyle(MenuColourTable ColourTable, bool DrawScreenPanel, bool DrawBackgroundFx, bool DrawSelectionGlow, MenuPanelTint PanelTint)
     {
         /// <summary>Project I.G.I.'s menus, exactly as drawn before this type existed.</summary>
-        public static MenuStyle Igi1 { get; } = new(MenuColourTable.Igi1, DrawScreenPanel: true, DrawBackgroundFx: true, DrawSelectionGlow: false, PanelTint.Igi1);
+        public static MenuStyle Igi1 { get; } = new(MenuColourTable.Igi1, DrawScreenPanel: true, DrawBackgroundFx: true, DrawSelectionGlow: false, MenuPanelTint.Igi1);
 
         /// <summary>I.G.I. 2's retail menus: its own colour table, blue panel, no overlay, glow selection.</summary>
-        public static MenuStyle Igi2 { get; } = new(MenuColourTable.Igi2, DrawScreenPanel: true, DrawBackgroundFx: false, DrawSelectionGlow: true, PanelTint.Igi2);
+        public static MenuStyle Igi2 { get; } = new(MenuColourTable.Igi2, DrawScreenPanel: true, DrawBackgroundFx: false, DrawSelectionGlow: true, MenuPanelTint.Igi2);
     }
 
     /// <summary>The screen panel's colours: the fill tint and the border/title-rule edge.</summary>
