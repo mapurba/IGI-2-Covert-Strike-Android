@@ -147,8 +147,8 @@ if [ ! -f "$OUTPUT_DIR/heightmaps.res" ]; then
     exit 1
 fi
 HEIGHTMAP_SIZE=$(wc -c < "$OUTPUT_DIR/heightmaps.res")
-HEIGHTMAP_MB=$(echo "scale=1; $HEIGHTMAP_SIZE / 1024 / 1024" | bc)
-log_success "heightmaps.res (${HEIGHTMAP_MB} MB)"
+HEIGHTMAP_MB=$((HEIGHTMAP_SIZE / 1024 / 1024))
+log_success "heightmaps.res (~${HEIGHTMAP_MB} MB)"
 
 # Run self-test
 echo ""
@@ -243,10 +243,10 @@ if [ -z "$APK_PATH" ]; then
 fi
 
 APK_SIZE=$(stat -f%z "$APK_PATH" 2>/dev/null || stat -c%s "$APK_PATH" 2>/dev/null || wc -c < "$APK_PATH")
-APK_SIZE_MB=$(echo "scale=1; $APK_SIZE / 1024 / 1024" | bc)
+APK_SIZE_MB=$((APK_SIZE / 1024 / 1024))
 
 ls -lh "$APK_PATH"
-log_success "APK ready: $APK_PATH ($APK_SIZE_MB MB)"
+log_success "APK ready: $APK_PATH (~${APK_SIZE_MB} MB)"
 echo ""
 
 # ============================================================
