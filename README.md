@@ -122,6 +122,16 @@ Ensure the following tools are installed and present in your `PATH`:
 
 ## Step-by-Step Build Instructions
 
+### One-command build (Linux/macOS)
+
+From the repository root, run:
+
+```bash
+./build_android.sh
+```
+
+The script publishes and deploys the managed ARM64 assemblies, builds and verifies the release APK, and saves the full diagnostic log under `app/android/build/logs/`.
+
 ### 1. Build and Publish .NET ARM64 Assemblies
 
 From the root of the repository:
