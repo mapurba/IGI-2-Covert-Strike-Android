@@ -1,0 +1,17 @@
+// The Long Descent: original prototype mission
+// Mission 99 - a custom test mission
+// Parameters: id, mode(4 chars), name-key, desc-key, tag, mission-dir, common-dir, level-dir, common-pack, level-pack, briefing-sprite
+
+DefineMission(
+    99,
+    'S', 'N', 'G', 'L',
+    'LONG_DESCENT_NAME',
+    'LONG_DESCENT_DESC',
+    '',
+    'missions/long_descent',
+    'missions/long_descent/common',
+    'missions/long_descent/level',
+    'long_descent',
+    'long_descent',
+    'mission99.spr'
+);

@@ -1,0 +1,91 @@
+// ============================================================
+// The Long Descent - Level Objects & Gameplay
+// Phase 4: Gameplay Implementation
+// ============================================================
+
+// --- PLAYER ---
+HumanPlayer(
+    Position = (102, 102, 145)
+    Gamma = 180
+    Model = 'player'
+    Team = 0
+    Weapon = 'SetupWeapons'
+    1st Person Model = 'arms_player'
+    Visibility Gamma = 2.0
+    Visibility Minimum = 0.1
+    Visibility Maximum = 0.9
+    Carry over weapons from previous mission = FALSE
+);
+
+// --- PLAYER WEAPONS ---
+SetupWeapons()
+{
+    GiveWeapon(SniperRifle);
+    SetAmmo(SniperRifle, 150);
+    GiveWeapon(AssaultRifle);
+    SetAmmo(AssaultRifle, 120);
+    GiveWeapon(Knife);
+}
+
+// --- GUARDS & AI ---
+AISquad(
+    Formation Distance = 3.0
+    SquadType = 1
+);
+
+// Guard 1: North perimeter
+HumanSoldier(
+    Position = (276, 204, 16)
+    Gamma = 45
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Heirachy = 0
+    Stand Animation = 0
+);
+
+HumanSoldier(
+    Position = (346, 244, 16)
+    Gamma = 135
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Heirachy = 0
+    Stand Animation = 0
+);
+
+HumanSoldier(
+    Position = (306, 284, 16)
+    Gamma = 225
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Heirachy = 0
+    Stand Animation = 0
+);
+
+HumanSoldier(
+    Position = (306, 244, 29)
+    Gamma = 0
+    Model = 'guard'
+    Team = 1
+    Weapon = 'GuardArmed'
+    Bone Heirachy = 0
+    Stand Animation = 0
+);
+
+// --- GUARD WEAPONS ---
+GuardArmed()
+{
+    GiveWeapon(AssaultRifle);
+    SetAmmo(AssaultRifle, 120);
+}
+
+// --- OBJECTIVES ---
+// Primary: Retrieve intelligence chip from compound locker
+// Secondary: Survive
+// Extraction: Reach the lake
+
+// ============================================================
+// End of Level Objects
+// ============================================================
