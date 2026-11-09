@@ -103,6 +103,9 @@ public readonly record struct MouseLookSettings(float RadiansPerCount, bool Inve
     public static float ZoomSensitivityScale(float currentTanX) =>
         Math.Clamp(currentTanX / HumanView.DefaultTanX, 0f, 1f);
 
+    /// <summary>Gets the touch-only aim multiplier when a weapon scope is active.</summary>
+    public static float TouchScopeSensitivityScale(bool scopeActive) => scopeActive ? 2f : 1f;
+
     /// <summary>The yaw a frame's horizontal motion asks for, in radians.</summary>
     /// <param name="mouseDeltaX">The horizontal motion, in mouse counts.</param>
     /// <returns>The change in yaw. Mouse right turns right.</returns>

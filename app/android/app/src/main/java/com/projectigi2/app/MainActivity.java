@@ -58,17 +58,21 @@ import androidx.documentfile.provider.DocumentFile;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
 
 public class MainActivity extends Activity implements SurfaceHolder.Callback {
     private static final String TAG = "ProjectIGI2";
     private static final String ASSET_VERSION = "v22_perm_on_start";
+    private static final String LONG_DESCENT_ASSET_PATH = "missions/long_descent";
     private static final int REQUEST_SELECT_GAME_FOLDER = 2001;
     private static final int REQUEST_STORAGE_PERMISSIONS = 1002;
     private static final String PREFS_NAME = "projectigi_prefs";
@@ -517,6 +521,19 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
         // Check if game folder already exists and is verified
         boolean hasExistingGame = checkExistingGameFolder();
+        if (hasExistingGame) {
+            try {
+                installLongDescentMission(new File(filesDir, "Project IGI 2"));
+            } catch (IOException e) {
+                Log.e(TAG, "Failed to install Mission 99 assets", e);
+                runOnUiThread(() -> {
+                    statusText.setText("MISSION INSTALL ERROR: " + e.getMessage());
+                    updatePlayButtonState(false);
+                });
+                return;
+            }
+        }
+
         runOnUiThread(() -> {
             if (hasExistingGame) {
                 statusText.setText("GAME FILES VERIFIED & READY!");
@@ -526,6 +543,384 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 updatePlayButtonState(false);
             }
         });
+    }
+
+    private void installLongDescentMission(File gameDataDir) throws IOException {
+        File[] children = gameDataDir.listFiles();
+        if (children == null) {
+            throw new IOException("Cannot list game data directory");
+        }
+
+        File missionRoot = null;
+        File staleRoot = null;
+        for (File child : children) {
+            if (child.getName().equalsIgnoreCase("missions")) {
+                if (!child.isDirectory()) {
+                    throw new IOException("Mission root is not a directory: " + child);
+                }
+                if (missionRoot == null) {
+                    missionRoot = child;
+                } else if (staleRoot == null) {
+                    staleRoot = child;
+                } else {
+                    throw new IOException("Multiple conflicting mission folders; preserve and resolve them manually");
+                }
+            }
+        }
+        if (missionRoot == null) {
+            throw new IOException("Game mission folder not found");
+        }
+
+        if (staleRoot != null) {
+            // The previous installer created exactly this lowercase folder alongside the retail one.
+            if (missionRoot.getName().equals("missions")) {
+                File swap = missionRoot;
+                missionRoot = staleRoot;
+                staleRoot = swap;
+            }
+            if (!staleRoot.getName().equals("missions")) {
+                throw new IOException("Conflicting mission folders; preserve and resolve them manually");
+            }
+            File[] staleChildren = staleRoot.listFiles();
+            if (staleChildren == null || staleChildren.length > 1
+                    || (staleChildren.length == 1
+                        && (!staleChildren[0].getName().equals("long_descent")
+                            || !isKnownLongDescent(staleChildren[0])))) {
+                throw new IOException("Lowercase mission folder contains unrecognized data; no files were changed");
+            }
+            if (staleChildren.length == 1) {
+                File destination = new File(missionRoot, "long_descent");
+                if (destination.exists() || !staleChildren[0].renameTo(destination)) {
+                    throw new IOException("Cannot safely migrate Mission 99 to " + destination);
+                }
+            }
+            if (!staleRoot.delete()) {
+                throw new IOException("Cannot remove empty duplicate mission folder " + staleRoot);
+            }
+        }
+
+        File missionDir = new File(missionRoot, "long_descent");
+        File[] missionChildren = missionRoot.listFiles();
+        if (missionChildren == null) {
+            throw new IOException("Cannot list mission directory " + missionRoot);
+        }
+        for (File child : missionChildren) {
+            if (child.getName().equalsIgnoreCase("long_descent")
+                    && (!child.equals(missionDir) || !isKnownLongDescent(child))) {
+                throw new IOException("Existing Mission 99 data differs from bundled assets: " + child);
+            }
+        }
+        if (!missionDir.exists()) {
+            copyAssetFolder(getAssets(), LONG_DESCENT_ASSET_PATH, missionDir);
+        } else if (!assetMatchesFile(LONG_DESCENT_ASSET_PATH, missionDir)) {
+            String backupName = isOriginalLongDescent(missionDir) ? "long_descent_previous"
+                : isFirstDaylightLongDescent(missionDir) ? "long_descent_previous_daylight"
+                : isSkyLongDescent(missionDir) ? "long_descent_previous_sky"
+                : isDynamicLongDescent(missionDir) ? "long_descent_previous_dynamic"
+                : isCompoundLongDescent(missionDir) ? "long_descent_previous_compound"
+                : isNavigationLongDescent(missionDir) ? "long_descent_previous_navigation"
+                : isForestLongDescent(missionDir) ? "long_descent_previous_forest"
+                : isDenseForestLongDescent(missionDir) ? "long_descent_previous_dense_forest"
+                : isDenserForestLongDescent(missionDir) ? "long_descent_previous_denser_forest"
+                : isGrassyForestLongDescent(missionDir) ? "long_descent_previous_grassy_forest"
+                : isCompactLongDescent(missionDir) ? "long_descent_previous_800m"
+                : "long_descent_previous_500m";
+            File backup = new File(getFilesDir(), backupName);
+            File staging = new File(missionRoot, "long_descent_update");
+            if (backup.exists() || staging.exists()) {
+                throw new IOException("Mission 99 update backup or staging folder already exists");
+            }
+            copyAssetFolder(getAssets(), LONG_DESCENT_ASSET_PATH, staging);
+            if (!assetMatchesFile(LONG_DESCENT_ASSET_PATH, staging)) {
+                throw new IOException("Mission 99 update did not copy correctly");
+            }
+            if (!missionDir.renameTo(backup)) {
+                throw new IOException("Cannot preserve previous Mission 99");
+            }
+            if (!staging.renameTo(missionDir)) {
+                if (!backup.renameTo(missionDir)) {
+                    throw new IOException("Mission 99 update failed; previous version is at " + backup);
+                }
+                throw new IOException("Cannot install Mission 99 update; previous version restored");
+            }
+            Log.i(TAG, "Previous Mission 99 preserved at " + backup);
+        }
+        Log.i(TAG, "Installed Mission 99 assets at " + missionDir.getAbsolutePath());
+    }
+
+    private boolean isKnownLongDescent(File directory) throws IOException {
+        return assetMatchesFile(LONG_DESCENT_ASSET_PATH, directory)
+            || isOriginalLongDescent(directory) || isFirstDaylightLongDescent(directory)
+            || isSkyLongDescent(directory) || isDynamicLongDescent(directory)
+            || isCompoundLongDescent(directory) || isNavigationLongDescent(directory)
+            || isForestLongDescent(directory) || isDenseForestLongDescent(directory)
+            || isDenserForestLongDescent(directory) || isGrassyForestLongDescent(directory)
+            || isCompactLongDescent(directory) || isSmallLongDescent(directory);
+    }
+
+    private boolean isOriginalLongDescent(File directory) throws IOException {
+        File[] children = directory.listFiles();
+        File heightmaps = new File(directory, "heightmaps");
+        File[] maps = heightmaps.listFiles();
+        return directory.isDirectory() && children != null && children.length == 4
+            && heightmaps.isDirectory() && maps != null && maps.length == 1
+            && matchesSha256(new File(directory, "mission.qvm"), "d325d6789c415244ccf812ac90e8afe26a661e51689252e85bab050713e46096")
+            && matchesSha256(new File(directory, "objects.qvm"), "5fb81ddfcecd5e24f0f9dfb73e3768e1892aad28b6146bac9eafd5c9317a6804")
+            && matchesSha256(new File(directory, "terrain-preview.pgm"), "76203575b52b352db2090471673e4d1198c2c728de729592e023c37700613b2f")
+            && matchesSha256(new File(heightmaps, "heightmaps.res"), "fa4db61c0527c04e4f69bf52354822726a91f9bf65269d4fab0bf7b134ca1071");
+    }
+
+    private boolean isFirstDaylightLongDescent(File directory) throws IOException {
+        return isDaylightLongDescent(directory, "c37132f2b73545e31c2c5293996193913edc0299d23509cd2e5b330615ca28e6");
+    }
+
+    private boolean isSkyLongDescent(File directory) throws IOException {
+        return isDaylightLongDescent(directory, "bbd42862a118b1921c577ea6913790601df00ad76fcab6f2a4ed5ab7d71bb572");
+    }
+
+    private boolean isDynamicLongDescent(File directory) throws IOException {
+        return isDaylightLongDescent(directory, "c004cdbe7d3036e7b05fc9c9031a2a077e73a727f005d74babab2d60f95c3546");
+    }
+
+    private boolean isCompoundLongDescent(File directory) throws IOException {
+        return isDaylightLongDescent(directory,
+            "a324a66e89af3dfc556293ffdee449ddfb338f8e1f89448cc8930b48e3154879",
+            "f52d25049b7d2c10d31c3f78ae969d9bcda19a7efcfac484143afbac6c71d1c8");
+    }
+
+    private boolean isNavigationLongDescent(File directory) throws IOException {
+        return isNavigationLongDescent(directory, 0);
+    }
+
+    private boolean isForestLongDescent(File directory) throws IOException {
+        return isNavigationLongDescent(directory, 1);
+    }
+
+    private boolean isDenseForestLongDescent(File directory) throws IOException {
+        return isNavigationLongDescent(directory, 2);
+    }
+
+    private boolean isDenserForestLongDescent(File directory) throws IOException {
+        return isNavigationLongDescent(directory, 3);
+    }
+
+    private boolean isGrassyForestLongDescent(File directory) throws IOException {
+        return isNavigationLongDescent(directory, 4);
+    }
+
+    private boolean isCompactLongDescent(File directory) throws IOException {
+        return isNavigationLongDescent(directory, 5);
+    }
+
+    private boolean isSmallLongDescent(File directory) throws IOException {
+        return isNavigationLongDescent(directory, 6);
+    }
+
+    private boolean isNavigationLongDescent(File directory, int forestVersion) throws IOException {
+        File ai = new File(directory, "AI");
+        File graphs = new File(directory, "graphs");
+        File heightmaps = new File(directory, "heightmaps");
+        File textures = new File(directory, "textures");
+        File[] children = directory.listFiles();
+        File[] scripts = ai.listFiles();
+        File[] graphFiles = graphs.listFiles();
+        File[] maps = heightmaps.listFiles();
+        File[] images = textures.listFiles();
+        if (!directory.isDirectory() || children == null || children.length != (forestVersion >= 2 ? 16 : forestVersion == 1 ? 12 : 7)
+                || !ai.isDirectory() || scripts == null || scripts.length != 17
+                || !graphs.isDirectory() || graphFiles == null || graphFiles.length != 1
+                || !heightmaps.isDirectory() || maps == null || maps.length != 1
+                || !textures.isDirectory() || images == null || images.length != 1
+                || !matchesSha256(new File(directory, "mission.qvm"), "a324a66e89af3dfc556293ffdee449ddfb338f8e1f89448cc8930b48e3154879")
+                || !matchesSha256(new File(directory, "objects.qvm"), forestVersion == 6
+                    ? "bbd5c600dcbf9cf1cff916b0ee988c0b3bb00c4d56e3cff4820397d823ba5268"
+                    : forestVersion == 5
+                    ? "6071b22cfe503802d4ba4c56d6544fb2762ca45bdf368fb4dab647e0cc0f1a91"
+                    : forestVersion == 4
+                    ? "bba9489eb089483961c92eff0c87edfd42b788adf39d15bc82d2f05fc4768b32"
+                    : forestVersion == 3
+                    ? "2e359fbc9f1a2ea1d9cf9d21f125e2b4548bacf06bb5c1c82f88da6f731c0042"
+                    : forestVersion == 2
+                    ? "0f9a909a757f2e0dde0cdead8b0b6f88763dd2175f396cde2c9cef7cd100d75d"
+                    : forestVersion == 1 ? "bf95fd1b18582ec769318f326b7e38b4bcfe164c8dbd0616fd3e8bc69885c83e"
+                    : "b53289c787144a4f179fcf88f0c345f30135ee166442db36c84bfb52c9ca9928")
+                || !matchesSha256(new File(directory, "terrain-preview.pgm"), forestVersion == 6
+                    ? "8ae0e752e912f0bfe192c1aad55e1f0dc376fb05cef8b18f82b883663fe3643c"
+                    : forestVersion == 5
+                    ? "1adda9bc2f7e54ee2e49e9884c4749e6f1cbfcef13df463f5de99ec6b1c7b635"
+                    : "76203575b52b352db2090471673e4d1198c2c728de729592e023c37700613b2f")
+                || !matchesSha256(new File(heightmaps, "heightmaps.res"), forestVersion == 6
+                    ? "2b36cd631ea9afec6737142afa670ac9bde1bd298fd7f7269e452777f1ee3f6b"
+                    : forestVersion == 5
+                    ? "3d939dec300393d759d7f4dc20f03eb6ecfdf8700b8cefc2d9e86053ca6c247f"
+                    : "fa4db61c0527c04e4f69bf52354822726a91f9bf65269d4fab0bf7b134ca1071")
+                || !matchesSha256(new File(textures, "long_descent_ground.tga"), "7ae362bcb01fc810ab0da2f2f6d03bdb330480ca54339d12dc0afcedc7869805")
+                || !matchesSha256(new File(graphs, "graph300.dat"), forestVersion == 6
+                    ? "631f5ba0a8ad877afb834a4d8a4c901cab682fdd963bbe0d0fad7523bf06c5dc"
+                    : forestVersion == 5
+                    ? "1e830fe5c42db0e3dbeb74186b37104f2538d914d0690371b972e649a8f69c85"
+                    : "fa827c0ff3cf34e5483db3a26de557e783ca8de6158ae6f6ab18765adef7db65")) {
+            return false;
+        }
+        if (forestVersion == 1 && (!matchesSha256(new File(directory, "forest_400.dat"), "68716c837209c1c8b7872c4cfaa0f30404b05ea1db41c2c523e9e58e2df96f7e")
+                || !matchesSha256(new File(directory, "forest_401.dat"), "d10623ceb2b40333bc3ace5efa53046f2807a7349323e4887c4c2a01d8728626")
+                || !matchesSha256(new File(directory, "forest_402.dat"), "a041b59e2447bb245fb2d4304b9b088f71b91a48d08656eca05beadc92fb16d7")
+                || !matchesSha256(new File(directory, "forest_403.dat"), "d88302ce32e4ad8c224db6260515cf83cb8496eedf5cf23441646a70e4bc9aad")
+                || !matchesSha256(new File(directory, "forest_404.dat"), "557570bd8473bfa5efbc4fe1e0f9256b2cde2b2f81f987f532b7d9d160a7fffb"))) {
+            return false;
+        }
+        if (forestVersion == 2) {
+            String[] hashes = {
+                "459e1aee5191014c629fa0355afd3986c3e81adde2b61d6d1972c9726fbcf5fb",
+                "13c5d815a46e27ed44ebba6cc76902fb6801012a41f2a561ee1e2dd14f8e3e4c",
+                "0538a6a648d6cdfe2dfea6c926bd99bfd5f4e69c60d2641f2d9bb172704b1153",
+                "2e551b60dbadf5aa1e123a864428f97286983a13750dd1eb525453f54f8df29d",
+                "792c866f868ce4b9ade3cb3c38065e61f73db8ee1383450b659f1a1f80705a52",
+                "59ef8f99e6e86d8bd5492df5f665ecaf5e96c7e19afe15e5fd2c468c4522f470",
+                "a7004c3fbebdf094a8c72c9ca1f65f749f7190f573809a14fc50f6052e7f9196",
+                "0b023d1520938acde5864d754fd2ea751e5fa718b13dd10118f79491eb4883a5",
+                "b02b04476e18c9bbb1d0bc000ef80dbe447827f274c257e4eae0a2ca5dfca200",
+            };
+            for (int i = 0; i < hashes.length; i++) {
+                if (!matchesSha256(new File(directory, "forest_" + (400 + i) + ".dat"), hashes[i])) {
+                    return false;
+                }
+            }
+        }
+        if (forestVersion >= 3) {
+            String[] hashes = forestVersion == 6 ? new String[] {
+                "0a4230b047186899089645661696c8ed2523b37a456c4b34999f8d46053c723d",
+                "047486e8afe0b9dab9bec450e5eea4c84756e43c599c33c9d0ec941939f68b9a",
+                "028563a560a7a7b3b2380ffd3b8f5ee2bec7d08db17e0b6852accb717f20b6bf",
+                "f3ac36e45ee6ecfb3dcf29ef49daed78657d5625586aa73edb89c05f25f44517",
+                "eb6f40d6bd68238dbbb9670211c7718124d461a497e1919de725324ed2f45447",
+                "44f85eaade04cb773f534277a96a127d4ee4a833eb9e56e1d80fab8bf6a9cb2a",
+                "6b8f1daa6a77be337aa74b29f23d9f510d80c3083b0087a7ed597b174f518903",
+                "e47211a30cce8283a80a94fac1bc206d9cd91fe7b4cf73571cc21a7b3b51803a",
+                "84cc3f3848b9643833492fa6d23ca7931392e42df715a86a626b156227b3dee9",
+            } : forestVersion == 5 ? new String[] {
+                "94c9304222b9eb503dafe767223acf446bc54c3e172cff3640b795aacad52b82",
+                "4005073c795c1830d320dd3f4e17caeb2e14026c5a08b4af601540a91ba2bfc3",
+                "4275a667e6e0eeb687edbe0e0db692ab740dc80998d188c31efde56116704743",
+                "7d25c8d04e376c1e3d347a4631e027ea519f3b6630205247e6ab5dfc0d7caea8",
+                "3762b0227f6167913077eb843ccda369d887c05f63e7f2870a77d31f6dfc291f",
+                "85ecde652470714ac19c0a0571b06ba09726d6d504e18fbb398851a40c4abaec",
+                "e472b37c726219622109e8647482e8e08621a1ed6b0af04ec51aa43836e75191",
+                "36428137073386665fef7b4933016b97842d7ca308107b2144c3a09a1626b63e",
+                "837d746102e10ff64b5584dcb12a67066d428b2e93d0fe73b080866812185f2f",
+            } : new String[] {
+                "c02a8b732608d674873f65aeeb5710a8238ac8d8825b22b63409b052b0f4459e",
+                "2cba11a4298473f4b319fdd8b078d719c76d352074a3cab9020b057e0ca2cfd5",
+                "4535861ecdeb8b9298135ed745438fca296286ba709aa4beb3807397d9500ae4",
+                "68a133271da42511618cc10b2d085b255c4d31273169fd3ec2162485f8536b6b",
+                "9e4be139a6dc01f5f8ce993520ff3e86b34b25a7967b1dde9a6cce5f96a16905",
+                "fccc10cd411d6417a7cc8ad4124855fcf56c9c6817938aceb103f1ea7aaf6b81",
+                "71abfab81d6f71e390785a95667df8d1f13392a47e2b414491774c85932e851d",
+                "9471a7f5bdceedc452fdf227d6c631a658c2fe9e26fc5bd08be2125b6fb0f850",
+                "09aa6c3b35fbdea95518d0d88c2b89be2fb304c2ccddb518d26f1aead108b7cc",
+            };
+            for (int i = 0; i < hashes.length; i++) {
+                if (!matchesSha256(new File(directory, "forest_" + (400 + i) + ".dat"), hashes[i])) {
+                    return false;
+                }
+            }
+        }
+        for (int id = 200; id < 215; id++) {
+            if (!matchesSha256(new File(ai, id + ".qvm"), "96eb1eb2d0fbcca0e62698affed969a9db8e7ef4538c06108ec4cf5f6e3663ea")) {
+                return false;
+            }
+        }
+        return matchesSha256(new File(ai, "Squad_301.qvm"), "5393781d38cef2b6d6db34d56ad028d8e430302f2f172f40ef317b2c8dcdcf6d")
+            && matchesSha256(new File(ai, "Squad_302.qvm"), "5393781d38cef2b6d6db34d56ad028d8e430302f2f172f40ef317b2c8dcdcf6d");
+    }
+
+    private boolean isDaylightLongDescent(File directory, String objectsHash) throws IOException {
+        return isDaylightLongDescent(directory,
+            "fd65bd7282850e8d045dbbc43afac0bc832e96d2cce4fa4f0a6db13323147b2b", objectsHash);
+    }
+
+    private boolean isDaylightLongDescent(File directory, String missionHash, String objectsHash) throws IOException {
+        File[] children = directory.listFiles();
+        File heightmaps = new File(directory, "heightmaps");
+        File textures = new File(directory, "textures");
+        File[] maps = heightmaps.listFiles();
+        File[] images = textures.listFiles();
+        return directory.isDirectory() && children != null && children.length == 5
+            && heightmaps.isDirectory() && maps != null && maps.length == 1
+            && textures.isDirectory() && images != null && images.length == 1
+            && matchesSha256(new File(directory, "mission.qvm"), missionHash)
+            && matchesSha256(new File(directory, "objects.qvm"), objectsHash)
+            && matchesSha256(new File(directory, "terrain-preview.pgm"), "76203575b52b352db2090471673e4d1198c2c728de729592e023c37700613b2f")
+            && matchesSha256(new File(heightmaps, "heightmaps.res"), "fa4db61c0527c04e4f69bf52354822726a91f9bf65269d4fab0bf7b134ca1071")
+            && matchesSha256(new File(textures, "long_descent_ground.tga"), "7ae362bcb01fc810ab0da2f2f6d03bdb330480ca54339d12dc0afcedc7869805");
+    }
+
+    private boolean matchesSha256(File file, String expected) throws IOException {
+        if (!file.isFile()) {
+            return false;
+        }
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new IOException("SHA-256 is unavailable", e);
+        }
+        try (InputStream input = new FileInputStream(file)) {
+            byte[] buffer = new byte[65536];
+            int count;
+            while ((count = input.read(buffer)) != -1) {
+                digest.update(buffer, 0, count);
+            }
+        }
+        StringBuilder actual = new StringBuilder();
+        for (byte value : digest.digest()) {
+            actual.append(String.format(Locale.US, "%02x", value & 0xff));
+        }
+        return expected.contentEquals(actual);
+    }
+
+    private boolean assetMatchesFile(String assetPath, File file) throws IOException {
+        String[] assets = getAssets().list(assetPath);
+        if (assets == null) {
+            throw new IOException("Cannot list bundled asset " + assetPath);
+        }
+        if (assets.length > 0) {
+            File[] files = file.listFiles();
+            if (!file.isDirectory() || files == null || files.length != assets.length) {
+                return false;
+            }
+            for (String asset : assets) {
+                if (!assetMatchesFile(assetPath + "/" + asset, new File(file, asset))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if (!file.isFile()) {
+            return false;
+        }
+        try (InputStream asset = getAssets().open(assetPath);
+             InputStream existing = new FileInputStream(file)) {
+            byte[] expected = new byte[65536];
+            byte[] actual = new byte[65536];
+            int count;
+            while ((count = asset.read(expected)) != -1) {
+                int offset = 0;
+                while (offset < count) {
+                    int read = existing.read(actual, offset, count - offset);
+                    if (read == -1) {
+                        return false;
+                    }
+                    offset += read;
+                }
+                for (int i = 0; i < count; i++) {
+                    if (expected[i] != actual[i]) {
+                        return false;
+                    }
+                }
+            }
+            return existing.read() == -1;
+        }
     }
 
     private boolean checkExistingGameFolder() {
@@ -642,6 +1037,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 targetDataDir.mkdirs();
             }
             copyDocumentTree(rootDoc, targetDataDir);
+            installLongDescentMission(targetDataDir);
 
             Log.i(TAG, "Game files successfully copied and verified.");
             runOnUiThread(() -> {

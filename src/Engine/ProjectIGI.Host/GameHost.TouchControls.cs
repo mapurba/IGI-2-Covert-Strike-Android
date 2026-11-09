@@ -330,7 +330,8 @@ public sealed partial class GameHost
 
             if (_touchControls.Look is { } look && (look.X != 0f || look.Y != 0f))
             {
-                input.Mouse.AddMotion(look.X, look.Y);
+                float aimScale = MouseLookSettings.TouchScopeSensitivityScale(TitlePlayer?.IsWeaponScopeActive == true);
+                input.Mouse.AddMotion(look.X * aimScale, look.Y * aimScale);
             }
 
             // Gyroscope aim: tilt the phone to turn the view. Only in Play mode and

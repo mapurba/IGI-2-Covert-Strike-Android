@@ -273,6 +273,9 @@ public sealed partial class Igi2TitlePlayer : ITitlePlayer, ITitleFirstPerson, I
         : Human.CameraMode is 3 or 5 ? 1f : Human.View.FieldOfView;
 
     /// <inheritdoc/>
+    public bool IsWeaponScopeActive => Weapons?.ActiveScope is not null;
+
+    /// <inheritdoc/>
     /// <remarks>
     /// Built once a tick, on the first ask after it, from the view as the tick left it; none while a cutscene's camera is placed,
     /// which is not the player's eyes.
@@ -557,7 +560,8 @@ public sealed partial class Igi2TitlePlayer : ITitlePlayer, ITitleFirstPerson, I
     public void Tick(in TitlePlayerInput input)
     {
         ApplyCheats();
-        Igi2PlayerAction held = Map(input.Held) | (Igi2PlayerAction)(input.TitleHeld | input.TitlePressed);
+        Igi2PlayerAction held = Map(input.Held | (input.Pressed & PlayerAction.Binoculars))
+            | (Igi2PlayerAction)(input.TitleHeld | input.TitlePressed);
         Igi2PlayerAction pressed = Map(input.Pressed) | (Igi2PlayerAction)input.TitlePressed;
         _reader.MouseSensitivity = input.MouseSensitivity;
         Human.SteadyTurns = GameplayCVars.SteadyTurns.Value;

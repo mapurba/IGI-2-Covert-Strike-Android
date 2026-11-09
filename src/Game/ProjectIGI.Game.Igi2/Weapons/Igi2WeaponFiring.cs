@@ -292,7 +292,7 @@ public sealed class Igi2WeaponFiring
             return;
         }
 
-        if (item.Loaded(fireType) == 0)
+        if (item.Loaded(fireType) == 0 && weaponType.AmmoInfo(fireType, _tables).RoundsToFire > 0)
         {
             _inventory.Status = Igi2WeaponStatus.Empty;
             return;

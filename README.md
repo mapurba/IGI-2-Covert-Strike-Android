@@ -63,18 +63,18 @@ The Android host (`AndroidHost.cs`) runs the I.G.I. 2 title through `TitleCatalo
 
 ---
 
-## Original mission terrain prototype
+## Mission 99: The Long Descent
 
-The first step toward an original mountain, compound and lakeside mission is a deterministic terrain authoring prototype. With the .NET 10 SDK, run:
+The Android build includes an experimental Mission 99 world prototype. With the .NET 10 SDK, generate its assets into a new directory and run the asset self-test:
 
 ```bash
 dotnet run --project apps/ProjectIGI.TerrainPrototype -- /path/to/new-output-directory
 dotnet run --project apps/ProjectIGI.TerrainPrototype -- --self-test
 ```
 
-The output directory must not already exist. The tool creates `heightmaps.res`, containing a 256 x 256 I.G.I. 2 height tile, and a grayscale `terrain-preview.pgm` image. The intended tile span is 1,200 x 1,200 metres: the northwest plateau is the lookout, the central-eastern plateau is reserved for the compound, and the southeast basin is reserved for the lake. Heights are encoded in engine units (4,096 units per metre).
+The output directory must not already exist. The tool generates a compiled mission definition and level script, a `heightmaps/heightmaps.res` archive with a 1024 x 1024 tile, a generated prototype ground texture, a grayscale `terrain-preview.pgm`, an AI graph, forest placement files, and scripts that invoke the installed game's default AI handlers. The terrain material instead references `MISSIONS/multiplayer/jungle/textures/lushgrass.jpg` from the user's installed game. That file must be present in the imported game data; if it is missing, the renderer logs a warning and the ground draws untextured. The 500 x 500 metre terrain has a mountain lookout in the northwest and lower open ground toward the southeast. The compound and navigation graph retain their internal spacing while moving closer to the lookout. The level declares a daytime sky, midday sun and ambient light, uses the original player and first-person arms model names, and requests an M16A2. It also references the player's installed location 1 game packs for three compound buildings, 15 armed soldier placements, two camera placements, and tree, bush and grass models; those retail assets are not bundled in the APK. On Android, the app installs the mission under the existing `Project IGI 2/missions/long_descent` directory (using the existing folder's casing) after it verifies or imports the user's game files; no retail mission files are replaced. Exact matches to the earlier bundled prototypes are preserved in app storage before updating, and unrecognized mission files are not overwritten.
 
-**This is not a playable level and should not be copied over retail files.** The archive still needs a custom mission definition and `TerrainMap` placement, materials, water, buildings, vegetation, navigation, objectives and a safe Android delivery/loading path. The preview shows height only, not water or finished scenery. The generated archive is checked with the existing readers, but it has not yet been loaded in the game.
+This is not a complete or playable extraction mission. The 500-metre revision loaded on the tested Android device at the expected lookout; the terrain boundary and sparse prototype compound were visibly exposed from that viewpoint. The existing three buildings have not been replaced by the requested accessible intelligence facility. The increased touch sensitivity while a weapon scope is active still needs device verification. Grass placements vary the size and rotation of one grass model rather than providing distinct grass species. Performance across the level has not been measured. The user reports that enemies fire. Guard patrols, taking damage and death remain unverified. Camera detection and alarms, convoy, navigable objective building, lake, intelligence retrieval, extraction, mission completion and failure remain unimplemented or unverified. The requested sniper loadout is not implemented. The first-person weapon appeared as a dark silhouette; the user reported that the controls and optics work. The preview shows height only. The self-test checks the generated graph's connectivity, vegetation and guard placement heights and scripts as well as terrain, daylight, task layout, delayed updates and weapon-script invocation; it does not establish AI behavior, camera detection, visual quality, or complete gameplay.
 
 ---
 

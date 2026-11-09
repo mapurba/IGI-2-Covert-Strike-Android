@@ -41,6 +41,7 @@ internal static unsafe class VulkanCapabilityProbe
         ArgumentNullException.ThrowIfNull(vk);
         ArgumentNullException.ThrowIfNull(available);
 
+        bool vulkan12 = apiVersion >= Vk.Version12;
         bool vulkan13 = apiVersion >= Vk.Version13;
 
         using VulkanStructChain chain = new();
@@ -54,14 +55,23 @@ internal static unsafe class VulkanCapabilityProbe
             });
         }
 
-        PhysicalDeviceVulkan11Features* v11 = chain.Add(new PhysicalDeviceVulkan11Features
+        // Both aggregate feature structures were introduced in Vulkan 1.2. Older devices
+        // must not be queried with them: drivers may leave their contents untouched.
+        PhysicalDeviceVulkan11Features noV11 = default;
+        PhysicalDeviceVulkan12Features noV12 = default;
+        PhysicalDeviceVulkan11Features* v11 = &noV11;
+        PhysicalDeviceVulkan12Features* v12 = &noV12;
+        if (vulkan12)
         {
-            SType = StructureType.PhysicalDeviceVulkan11Features,
-        });
-        PhysicalDeviceVulkan12Features* v12 = chain.Add(new PhysicalDeviceVulkan12Features
-        {
-            SType = StructureType.PhysicalDeviceVulkan12Features,
-        });
+            v11 = chain.Add(new PhysicalDeviceVulkan11Features
+            {
+                SType = StructureType.PhysicalDeviceVulkan11Features,
+            });
+            v12 = chain.Add(new PhysicalDeviceVulkan12Features
+            {
+                SType = StructureType.PhysicalDeviceVulkan12Features,
+            });
+        }
 
         PhysicalDeviceVulkan13Features* v13 = null;
         if (vulkan13)
@@ -507,7 +517,9 @@ internal static unsafe class VulkanCapabilityProbe
         DescriptorIndexingOptions optional = capabilities.DescriptorIndexing
             ? capabilities.DescriptorIndexingOptions
             : default;
-        chain.Add(new PhysicalDeviceVulkan12Features
+        if (apiVersion >= Vk.Version12)
+        {
+            chain.Add(new PhysicalDeviceVulkan12Features
         {
             SType = StructureType.PhysicalDeviceVulkan12Features,
             BufferDeviceAddress = capabilities.BufferDeviceAddress,
@@ -529,7 +541,8 @@ internal static unsafe class VulkanCapabilityProbe
             DescriptorBindingStorageImageUpdateAfterBind = optional.StorageImageUpdateAfterBind,
             DescriptorBindingStorageBufferUpdateAfterBind = optional.StorageBufferUpdateAfterBind,
             DescriptorBindingUniformBufferUpdateAfterBind = optional.UniformBufferUpdateAfterBind,
-        });
+            });
+        }
 
         if (capabilities.PortabilitySubset && Enabled(VulkanExtensionNames.PortabilitySubset))
         {
@@ -543,7 +556,7 @@ internal static unsafe class VulkanCapabilityProbe
             chain.Add(portability);
         }
 
-        if (capabilities.Storage16Bit || capabilities.ShaderDrawParameters)
+        if (apiVersion >= Vk.Version12 && (capabilities.Storage16Bit || capabilities.ShaderDrawParameters))
         {
             chain.Add(new PhysicalDeviceVulkan11Features
             {

@@ -3,6 +3,10 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../../src/Engine/ProjectIGI.Engine/ProjectIGI.Engine.csproj" />
     <ProjectReference Include="../../src/Core/ProjectIGI.Formats/ProjectIGI.Formats.csproj" />
+    <ProjectReference Include="../../src/Core/ProjectIGI.Scripting/ProjectIGI.Scripting.csproj" />
+    <ProjectReference Include="../../src/Game/ProjectIGI.Game/ProjectIGI.Game.csproj" />
+    <ProjectReference Include="../../src/Game/ProjectIGI.Game.Igi2/ProjectIGI.Game.Igi2.csproj" />
   </ItemGroup>
 </Project>

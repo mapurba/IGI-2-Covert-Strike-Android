@@ -883,16 +883,13 @@ public sealed class TouchControls
         _computerLayout.Add(new TouchButtonSpot(TouchButton.ZoomOut, new UiVec2(ComputerStickRest.X - Px(300f), ComputerStickRest.Y), Px(CornerRadius), ElementId: TouchElementId.ZoomOut));
         _computerLayout.Add(new TouchButtonSpot(TouchButton.ZoomIn, new UiVec2(ComputerStickRest.X + Px(300f), ComputerStickRest.Y), Px(CornerRadius), ElementId: TouchElementId.ZoomIn));
 
-        // Corner utility. I.G.I. 2 has no night-vision goggles, only the thermal
-        // imaging device, so its corner carries no binoculars button: the thermal
-        // sight above the scope button is the only optics on touch. Project I.G.I.
-        // keeps its binoculars button.
+        // Both binoculars and thermal are separate tools in I.G.I. 2.
         float y = safe.Y + Px(80f);
         TouchElementId[] cornerIds = ShowIgi2Buttons
-            ? [TouchElementId.Pause, TouchElementId.Map, TouchElementId.WalkRun]
+            ? [TouchElementId.Pause, TouchElementId.Map, TouchElementId.WalkRun, TouchElementId.Binoculars]
             : [TouchElementId.Pause, TouchElementId.Map, TouchElementId.Binoculars];
         TouchButton[] cornerBtns = ShowIgi2Buttons
-            ? [TouchButton.Pause, TouchButton.Map, TouchButton.WalkRun]
+            ? [TouchButton.Pause, TouchButton.Map, TouchButton.WalkRun, TouchButton.Binoculars]
             : [TouchButton.Pause, TouchButton.Map, TouchButton.Binoculars];
         for (int i = 0; i < cornerBtns.Length; i++)
         {

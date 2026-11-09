@@ -132,6 +132,9 @@ public interface ITitlePlayer
     /// <summary>Gets how wide the eyes see, as the tangent of half the view's horizontal angle: one, ninety degrees, unless a zoom narrows it.</summary>
     float FieldOfViewScale => 1f;
 
+    /// <summary>Gets whether a weapon scope is active for touch aim sensitivity.</summary>
+    bool IsWeaponScopeActive => false;
+
     /// <summary>Gets a value indicating whether the title's level played a cutscene on the last tick, which Escape breaks rather than pausing.</summary>
     bool IsCutscenePlaying => false;
 
