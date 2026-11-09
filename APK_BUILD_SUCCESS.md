@@ -1,4 +1,8 @@
-# IGI-2 Covert Strike Phase 4 - APK Build Successfully Completed ✅
+# Historical APK build report
+
+> **Correction:** A prior APK build succeeded, but Mission 99 was not integrated or
+> tested as a playable mission. Its level description is not executable QVM and was
+> not deployed into the game data. Do not rely on the mission or device-test claims below.
 
 **Date:** November 8, 2024  
 **APK Location:** `app/android/app/build/outputs/apk/release/app-release.apk`  

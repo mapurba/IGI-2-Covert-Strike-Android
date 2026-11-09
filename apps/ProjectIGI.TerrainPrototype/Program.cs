@@ -1,7 +1,17 @@
 using System.Buffers.Binary;
 using System.Text;
+using ProjectIGI.Engine.Flow;
+using ProjectIGI.Engine.Level;
+using ProjectIGI.Engine.Resources;
+using ProjectIGI.Engine.Tasks;
+using ProjectIGI.Engine.Vfs;
 using ProjectIGI.Formats.Ilff;
 using ProjectIGI.Formats.World;
+using ProjectIGI.Game.Igi2.Ai;
+using ProjectIGI.Game.Igi2.Player;
+using ProjectIGI.Game.Igi2.World;
+using ProjectIGI.Scripting.Qvm;
+using ProjectIGI.Scripting.Runtime;
 
 namespace ProjectIGI.TerrainPrototype;
 
@@ -10,6 +20,7 @@ internal static class Program
     private const int Size = 1024;  // Epic scale: 1024x1024 unit terrain
     private const float UnitsPerMetre = 4096f;
     private const string HeightName = "heightmap000.thm";
+    private const string MissionDirectory = "missions/location9/level9";
 
     private static int Main(string[] args)
     {
@@ -39,6 +50,7 @@ internal static class Program
         VerifyArchive(archive, heightmap);
         byte[] preview = CreatePreview(heightmap);
         byte[] missionScript = CreateMissionScript();
+        byte[] levelScript = CreateLevelPrototypeScript();
         byte[] objectsScript = CreateObjectsScript();
 
         Directory.CreateDirectory(output);
@@ -57,7 +69,12 @@ internal static class Program
             file.Write(missionScript);
         }
 
-        using (FileStream file = new(Path.Combine(output, "objects.qvm"), FileMode.CreateNew))
+        using (FileStream file = new(Path.Combine(output, "level.prototype.qvm"), FileMode.CreateNew))
+        {
+            file.Write(levelScript);
+        }
+
+        using (FileStream file = new(Path.Combine(output, "objects.prototype.txt"), FileMode.CreateNew))
         {
             file.Write(objectsScript);
         }
@@ -65,9 +82,10 @@ internal static class Program
         Console.WriteLine($"Created {output}");
         Console.WriteLine("heightmaps.res: original prototype terrain tile");
         Console.WriteLine("terrain-preview.pgm: grayscale height preview (bright = high)");
-        Console.WriteLine("mission.qvm: mission definition script");
-        Console.WriteLine("objects.qvm: level objects, guards, and objectives (PHASE 4)");
-        Console.WriteLine("This is a work-in-progress mission prototype. Full gameplay pending.");
+        Console.WriteLine("mission.qvm: compiled mission descriptor (not yet deployable)");
+        Console.WriteLine("level.prototype.qvm: compiled terrain, player and guard task prototypes");
+        Console.WriteLine("objects.prototype.txt: illustrative level design, not an executable script");
+        Console.WriteLine("This is a work-in-progress mission prototype. A playable level is not yet implemented.");
         return 0;
     }
 
@@ -119,25 +137,76 @@ internal static class Program
 
     private static byte[] CreateMissionScript()
     {
-        string script = @"// The Long Descent: original prototype mission
-// Mission 99 - a custom test mission
-// Parameters: id, mode(4 chars), name-key, desc-key, tag, mission-dir, common-dir, level-dir, common-pack, level-pack, briefing-sprite
+        return QvmExpression.BuildProgram(QvmExpression.Call(
+            "DefineMission",
+            QvmExpression.Int(99),
+            QvmExpression.Text("S"),
+            QvmExpression.Text("N"),
+            QvmExpression.Text("G"),
+            QvmExpression.Text("L"),
+            QvmExpression.Text("LONG_DESCENT_NAME"),
+            QvmExpression.Text("LONG_DESCENT_DESC"),
+            QvmExpression.Text(string.Empty),
+            QvmExpression.Text(MissionDirectory),
+            QvmExpression.Text("missions/location9/common"),
+            QvmExpression.Text(MissionDirectory),
+            QvmExpression.Text("location9"),
+            QvmExpression.Text("level9"),
+            QvmExpression.Text("mission99.spr")));
+    }
 
-DefineMission(
-    99,
-    'S', 'N', 'G', 'L',
-    'LONG_DESCENT_NAME',
-    'LONG_DESCENT_DESC',
-    '',
-    'missions/long_descent',
-    'missions/long_descent/common',
-    'missions/long_descent/level',
-    'long_descent',
-    'long_descent',
-    'mission99.spr'
-);
-";
-        return System.Text.Encoding.Latin1.GetBytes(script);
+    private static byte[] CreateLevelPrototypeScript()
+    {
+        QvmExpression terrainMap = QvmExpression.Call(
+            "Task_New",
+            QvmExpression.Int(-1), QvmExpression.Text("TerrainMap"), QvmExpression.Text("Prototype terrain tile"),
+            QvmExpression.Int(0), QvmExpression.Int(Size), QvmExpression.Int(Size),
+            QvmExpression.Real(0), QvmExpression.Real(0), QvmExpression.Real(0),
+            QvmExpression.Real(Size), QvmExpression.Real(Size), QvmExpression.Real(0), QvmExpression.Text(string.Empty));
+
+        QvmExpression terrain = QvmExpression.Call(
+            "Task_New",
+            QvmExpression.Int(-1), QvmExpression.Text("Terrain"), QvmExpression.Text("Prototype terrain"),
+            QvmExpression.Real(0), QvmExpression.Real(0), QvmExpression.Real(0),
+            QvmExpression.Real(Size), QvmExpression.Real(Size),
+            QvmExpression.Real(1), QvmExpression.Real(1), QvmExpression.Real(0), QvmExpression.Real(0),
+            QvmExpression.Int(0), QvmExpression.Real(0), QvmExpression.Real(0), QvmExpression.Real(0),
+            QvmExpression.Real(0), QvmExpression.Real(0), QvmExpression.Int(0),
+            terrainMap);
+
+        static QvmExpression Coordinate(double fraction) => QvmExpression.Real((float)((fraction - 0.5) * Size * UnitsPerMetre));
+        static QvmExpression Elevation(double x, double y) => QvmExpression.Real((float)(HeightMetres(x, y) * UnitsPerMetre));
+
+        List<QvmExpression> tasks =
+        [
+            terrain,
+            QvmExpression.Call(
+                "Task_New",
+                QvmExpression.Int(0), QvmExpression.Text("HumanPlayer"), QvmExpression.Text("Player prototype"),
+                Coordinate(0.20), Coordinate(0.20), Elevation(0.20, 0.20),
+                QvmExpression.Real(0), QvmExpression.Text(string.Empty), QvmExpression.Int(0),
+                QvmExpression.Text(string.Empty), QvmExpression.Text(string.Empty),
+                QvmExpression.Real(1), QvmExpression.Real(0), QvmExpression.Real(1), QvmExpression.Int(0)),
+        ];
+
+        for (int i = 0; i < 15; i++)
+        {
+            double angle = 2 * Math.PI * i / 15;
+            double x = 0.60 + (0.035 * Math.Cos(angle));
+            double y = 0.48 + (0.035 * Math.Sin(angle));
+            QvmExpression mind = QvmExpression.Call(
+                "Task_New", QvmExpression.Int(500 + i), QvmExpression.Text("HumanAI"), QvmExpression.Text("Guard mind"),
+                QvmExpression.Text(Igi2AiConstants.AiTypes[0]), QvmExpression.Text(Igi2AiConstants.AnimTypes[2]),
+                QvmExpression.Int(-1));
+            tasks.Add(QvmExpression.Call(
+                "Task_New",
+                QvmExpression.Int(100 + i), QvmExpression.Text("HumanSoldier"), QvmExpression.Text("Guard prototype"),
+                Coordinate(x), Coordinate(y), Elevation(x, y), QvmExpression.Real((float)angle),
+                QvmExpression.Text(string.Empty), QvmExpression.Int(1), QvmExpression.Text(string.Empty),
+                QvmExpression.Int(0), QvmExpression.Int(0), mind));
+        }
+
+        return QvmExpression.BuildProgram(tasks);
     }
 
     private static byte[] CreateObjectsScript()
@@ -402,9 +471,65 @@ DefineMission(
         }
 
         byte[] mission = CreateMissionScript();
-        if (mission.Length == 0 || !System.Text.Encoding.Latin1.GetString(mission).Contains("DefineMission"))
+        MemoryFileDevice device = new();
+        device.Add($"{MissionDirectory}/mission.qvm", mission);
+        VirtualFileSystem fileSystem = new();
+        fileSystem.RegisterDevice(device);
+        ResourceRegistry resources = new(fileSystem);
+        NativeRegistry natives = new();
+        Igi2MissionCatalogue catalogue = new();
+        catalogue.Register(natives);
+        if (catalogue.Scan(fileSystem, resources, natives) != 1
+            || !catalogue.TryGet(99, out var descriptor)
+            || descriptor.GameMode != Igi2MissionCatalogue.SinglePlayerMode
+            || descriptor.MissionDirectory != MissionDirectory
+            || !catalogue.InProgressionOrder().Any(m => m.Id == 99))
         {
-            throw new InvalidOperationException("Mission script generation failed.");
+            throw new InvalidOperationException("Generated mission descriptor was not discovered in the I.G.I. 2 campaign catalogue.");
+        }
+
+        device.Add($"{MissionDirectory}/objects.qvm", CreateLevelPrototypeScript());
+        device.Add($"{MissionDirectory}/heightmaps/heightmaps.res", archive);
+        fileSystem.SetAlias(VirtualFileSystem.MissionAlias, $"LOCAL:{MissionDirectory}/");
+
+        GameLoop loop = new();
+        loop.Types.Register<TerrainTask>(TerrainTask.TypeName);
+        loop.Types.Register<TerrainMapTask>(TerrainMapTask.TypeName);
+        loop.Types.Register<Igi2HumanPlayerTask>("HumanPlayer");
+        loop.Types.Register<Igi2HumanSoldierTask>(Igi2HumanSoldierTask.TypeName);
+        loop.Types.Register<Igi2HumanAiTask>(Igi2HumanAiTask.TypeName);
+        LevelTask levelRoot = (LevelTask)loop.Tasks.New(loop.Tasks.Root, loop.Types.Get(EngineTaskTypes.Level));
+        LevelLoader levelLoader = new(levelRoot, loop.TaskCommands, loop.Natives, resources);
+        levelLoader.LoadMission($"LOCAL:{descriptor.MissionDirectory}");
+        Igi2TerrainSurface surface = Igi2TerrainSurface.Build(levelRoot, resources);
+        if (surface.Terrain is null || surface.Tiles.Count != 1
+            || surface.Tiles[0].Width != Size || surface.Tiles[0].Height != Size
+            || surface.Tiles[0].WorldWidth != Size || surface.Tiles[0].WorldHeight != Size
+            || surface.Tiles[0].HeightAt(Size / 5, Size / 5) <= 100 * UnitsPerMetre)
+        {
+            throw new InvalidOperationException("Compiled terrain did not load the expected terrain tile and mountain.");
+        }
+
+        Igi2HumanPlayerTask[] players = levelRoot.Descendants().OfType<Igi2HumanPlayerTask>().ToArray();
+        Igi2HumanSoldierTask[] soldiers = levelRoot.Descendants().OfType<Igi2HumanSoldierTask>().ToArray();
+        if (players.Length != 1 || players[0].Id != 0
+            || soldiers.Length != 15 || soldiers.Any(s => s.Ai is null || s.Team != 1)
+            || soldiers.Select(s => s.Id).Distinct().Count() != 15
+            || soldiers.Select(s => s.Ai!.Id).Distinct().Count() != 15)
+        {
+            throw new InvalidOperationException("Compiled level did not load one player and 15 distinct guard/mind tasks.");
+        }
+
+        static bool OnTerrain(Igi2TerrainSurface terrain, double x, double y, double z) =>
+            terrain.Tiles[0].CoversPoint(x, y)
+            && terrain.WaterGroundAt(x, y) is double ground
+            && Math.Abs(z - ground) < UnitsPerMetre;
+
+        var spawn = players[0].SpawnPosition;
+        if (!OnTerrain(surface, spawn.X, spawn.Y, spawn.Z)
+            || soldiers.Any(s => !OnTerrain(surface, s.Position.X, s.Position.Y, s.Position.Z)))
+        {
+            throw new InvalidOperationException("Player or guard prototype is not placed on the generated terrain.");
         }
 
         byte[] objects = CreateObjectsScript();
