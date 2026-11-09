@@ -15,7 +15,7 @@ namespace ProjectIGI.Game.World;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The order is the specification. Each step depends on the ones before it — the <c>MISSION:</c> alias
+/// The order is the specification. Each step depends on the ones before it ï¿½ the <c>MISSION:</c> alias
 /// has to exist before the terrain path resolves, both packs have to be open before
 /// <c>objects.qvm</c> names a model, and the search directory is re-pointed <em>between</em> the two
 /// pack opens because a pack's archives are addressed relative to it.
@@ -166,7 +166,13 @@ public sealed class MissionLoader
         }
 
         LoadedPack common = packs[0];
-        LoadedPack level = packs[^1];
+
+        // The level's own pack, not merely the last one: a custom mission may open extra packs after it.
+        string levelReference = $"LOCAL:{descriptor.LevelPackDirectory}/";
+        int levelIndex = descriptor.PacksToOpen.ToList().FindLastIndex(r =>
+            string.Equals(r.Name, descriptor.LevelPackName, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(r.Directory, levelReference, StringComparison.OrdinalIgnoreCase));
+        LoadedPack level = packs[levelIndex >= 0 ? levelIndex : packs.Count - 1];
 
         // 9-11. Shared sound, sprite and texture content.
         MountShared(pending);

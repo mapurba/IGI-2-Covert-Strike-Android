@@ -22,6 +22,7 @@ namespace ProjectIGI.Rendering.Mesh3D;
 /// </param>
 /// <param name="ObjectFogNear">The near view depth of the drawn object's sphere, in metres, for its linear fog.</param>
 /// <param name="ObjectFogFar">Its far view depth; equal to the near for the frame's exponential fog.</param>
+/// <param name="SceneCapture">Whether scene effects read the target's rig alpha, rather than presenting it directly.</param>
 public readonly record struct ForwardDrawState(
     Matrix4f Projection,
     SceneLighting Lighting,
@@ -37,7 +38,8 @@ public readonly record struct ForwardDrawState(
     bool FirstPerson,
     bool LinearScene = false,
     float ObjectFogNear = 0f,
-    float ObjectFogFar = 0f);
+    float ObjectFogFar = 0f,
+    bool SceneCapture = true);
 
 /// <summary>The terrain's level-of-detail slide.</summary>
 /// <param name="Scale">How the ramp is scaled.</param>
@@ -106,7 +108,7 @@ public static class ForwardPushBlock
         // What this draw is: the world, the rig, or something translucent -- and, for the rig, whether
         // there is a dynamic light to key it with. The studio key is a remaster light and the baked model
         // has none, which is what used to draw the vanilla rig as a black silhouette.
-        block[16] = ForwardDrawMarker.For(blend, state.FirstPerson, state.Lighting.Model);
+        block[16] = ForwardDrawMarker.For(blend, state.FirstPerson, state.Lighting.Model, state.SceneCapture);
 
         bool litRig = ForwardDrawMarker.IsStudioRig(block[16]);
 

@@ -41,8 +41,9 @@ public static class ForwardDrawMarker
     /// <param name="blend">How the draw is blended.</param>
     /// <param name="firstPerson">Whether the draw is bracketed as first-person geometry.</param>
     /// <param name="lighting">The lighting model in force.</param>
+    /// <param name="sceneCapture">Whether scene effects will sample the target, rather than presenting it directly.</param>
     /// <returns>One of the four markers.</returns>
-    public static float For(BlendMode blend, bool firstPerson, LightingModel lighting)
+    public static float For(BlendMode blend, bool firstPerson, LightingModel lighting, bool sceneCapture = true)
     {
         if (blend != BlendMode.Opaque)
         {
@@ -54,7 +55,10 @@ public static class ForwardDrawMarker
             return World;
         }
 
-        return lighting == LightingModel.Baked ? UnlitFirstPerson : LitFirstPerson;
+        // Zero rig alpha is scene metadata, not surface transparency. The baked world branch shades identically.
+        return lighting == LightingModel.Baked
+            ? sceneCapture ? UnlitFirstPerson : World
+            : LitFirstPerson;
     }
 
     /// <summary>Determines whether a marker names the draw the studio key light is for.</summary>

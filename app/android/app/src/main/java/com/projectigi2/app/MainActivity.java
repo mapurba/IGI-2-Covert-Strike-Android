@@ -624,7 +624,14 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 : isDenserForestLongDescent(missionDir) ? "long_descent_previous_denser_forest"
                 : isGrassyForestLongDescent(missionDir) ? "long_descent_previous_grassy_forest"
                 : isCompactLongDescent(missionDir) ? "long_descent_previous_800m"
-                : "long_descent_previous_500m";
+                : isSmallLongDescent(missionDir) ? "long_descent_previous_500m"
+                : isCloudLongDescent(missionDir) ? "long_descent_previous_clouds"
+                : isPatrolLongDescent(missionDir) ? "long_descent_previous_patrol"
+                : isRidgeLongDescent(missionDir) ? "long_descent_previous_ridge"
+                : isNightglassLongDescent(missionDir) ? "long_descent_previous_nightglass"
+                : isInitialRedemptionLongDescent(missionDir) ? "long_descent_previous_redemption_initial"
+                : isAlarmRedemptionLongDescent(missionDir) ? "long_descent_previous_redemption_alarm"
+                : "long_descent_previous_doors";
             File backup = new File(getFilesDir(), backupName);
             File staging = new File(missionRoot, "long_descent_update");
             if (backup.exists() || staging.exists()) {
@@ -655,7 +662,36 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             || isCompoundLongDescent(directory) || isNavigationLongDescent(directory)
             || isForestLongDescent(directory) || isDenseForestLongDescent(directory)
             || isDenserForestLongDescent(directory) || isGrassyForestLongDescent(directory)
-            || isCompactLongDescent(directory) || isSmallLongDescent(directory);
+            || isCompactLongDescent(directory) || isSmallLongDescent(directory)
+            || isCloudLongDescent(directory) || isPatrolLongDescent(directory)
+            || isDoorsLongDescent(directory) || isRidgeLongDescent(directory)
+            || isNightglassLongDescent(directory) || isInitialRedemptionLongDescent(directory)
+            || isAlarmRedemptionLongDescent(directory);
+    }
+
+    // Operation Nightglass, the compound layout that Operation Redemption replaces.
+    private boolean isNightglassLongDescent(File directory) throws IOException {
+        return directory.isDirectory()
+            && matchesSha256(new File(directory, "mission.qvm"), "576c1e62a71b46a5cbd8ca274150e27f6a80889028d76b91ca4dc75837c5b5a3")
+            && matchesSha256(new File(directory, "objects.qvm"), "84f2ce5e0d10c24d8d8b0b157fe51419539c73515d2c96f5fb61331897c936cc")
+            && matchesSha256(new File(new File(directory, "graphs"), "graph300.dat"),
+                "59932e08604a08cfe1f5ad1c8fd0a135b53bcd0e00caf160c5ceda7578bc1257");
+    }
+
+    private boolean isInitialRedemptionLongDescent(File directory) throws IOException {
+        return directory.isDirectory()
+            && matchesSha256(new File(directory, "mission.qvm"), "5ec92f037a03cd3393d0992058b9adbc10d1955a663036770d4695083379f1c5")
+            && matchesSha256(new File(directory, "objects.qvm"), "81a31cdb6ccdc4cb727f5fee8acbdbfee5e0c864396f5dc572b12eebe437f7d3")
+            && matchesSha256(new File(new File(directory, "graphs"), "graph300.dat"),
+                "0f718802e8fba27111cf2c087f0071d9a0c11a8fae11af5501f767f37747c8c0");
+    }
+
+    private boolean isAlarmRedemptionLongDescent(File directory) throws IOException {
+        return directory.isDirectory()
+            && matchesSha256(new File(directory, "mission.qvm"), "5ec92f037a03cd3393d0992058b9adbc10d1955a663036770d4695083379f1c5")
+            && matchesSha256(new File(directory, "objects.qvm"), "d3fc73ccbae9667af2648b0c94cf6cc25b5624806a0e88fbcf5fca64fd69587b")
+            && matchesSha256(new File(new File(directory, "graphs"), "graph300.dat"),
+                "0f718802e8fba27111cf2c087f0071d9a0c11a8fae11af5501f767f37747c8c0");
     }
 
     private boolean isOriginalLongDescent(File directory) throws IOException {
@@ -716,6 +752,22 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         return isNavigationLongDescent(directory, 6);
     }
 
+    private boolean isCloudLongDescent(File directory) throws IOException {
+        return isNavigationLongDescent(directory, 7);
+    }
+
+    private boolean isPatrolLongDescent(File directory) throws IOException {
+        return isNavigationLongDescent(directory, 8);
+    }
+
+    private boolean isDoorsLongDescent(File directory) throws IOException {
+        return isNavigationLongDescent(directory, 9);
+    }
+
+    private boolean isRidgeLongDescent(File directory) throws IOException {
+        return isNavigationLongDescent(directory, 10);
+    }
+
     private boolean isNavigationLongDescent(File directory, int forestVersion) throws IOException {
         File ai = new File(directory, "AI");
         File graphs = new File(directory, "graphs");
@@ -730,9 +782,19 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 || !ai.isDirectory() || scripts == null || scripts.length != 17
                 || !graphs.isDirectory() || graphFiles == null || graphFiles.length != 1
                 || !heightmaps.isDirectory() || maps == null || maps.length != 1
-                || !textures.isDirectory() || images == null || images.length != 1
-                || !matchesSha256(new File(directory, "mission.qvm"), "a324a66e89af3dfc556293ffdee449ddfb338f8e1f89448cc8930b48e3154879")
-                || !matchesSha256(new File(directory, "objects.qvm"), forestVersion == 6
+                || !textures.isDirectory() || images == null || images.length != (forestVersion >= 7 ? 2 : 1)
+                || !matchesSha256(new File(directory, "mission.qvm"), forestVersion == 10
+                    ? "ce1858346bedaaa7d3d062169f92b30d532aeffd73c0d0fedacb1ab8ada6e483"
+                    : "a324a66e89af3dfc556293ffdee449ddfb338f8e1f89448cc8930b48e3154879")
+                || !matchesSha256(new File(directory, "objects.qvm"), forestVersion == 10
+                    ? "81791c48f71bcaadeca14883d4d3e13aec61f7f0e8cff47177bbb403c7a82c10"
+                    : forestVersion == 9
+                    ? "529f23a7a4af93f25f13b0ced01ba1223af3c1b7d418088dbe72a4ee4badf15b"
+                    : forestVersion == 8
+                    ? "ceca67922895f99b4c5c783b340f1971da84ce1e23909014a26cb00bd9e3a452"
+                    : forestVersion == 7
+                    ? "2a662bf4a2673319d5f62e9905d551389d6378ec8947767479732daa7fd21c08"
+                    : forestVersion == 6
                     ? "bbd5c600dcbf9cf1cff916b0ee988c0b3bb00c4d56e3cff4820397d823ba5268"
                     : forestVersion == 5
                     ? "6071b22cfe503802d4ba4c56d6544fb2762ca45bdf368fb4dab647e0cc0f1a91"
@@ -744,18 +806,27 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                     ? "0f9a909a757f2e0dde0cdead8b0b6f88763dd2175f396cde2c9cef7cd100d75d"
                     : forestVersion == 1 ? "bf95fd1b18582ec769318f326b7e38b4bcfe164c8dbd0616fd3e8bc69885c83e"
                     : "b53289c787144a4f179fcf88f0c345f30135ee166442db36c84bfb52c9ca9928")
-                || !matchesSha256(new File(directory, "terrain-preview.pgm"), forestVersion == 6
+                || !matchesSha256(new File(directory, "terrain-preview.pgm"), forestVersion == 10
+                    ? "7cb53687980198729f8a26678122e4b700ab4e419913a8815c471a206557d73b"
+                    : forestVersion >= 6
                     ? "8ae0e752e912f0bfe192c1aad55e1f0dc376fb05cef8b18f82b883663fe3643c"
                     : forestVersion == 5
                     ? "1adda9bc2f7e54ee2e49e9884c4749e6f1cbfcef13df463f5de99ec6b1c7b635"
                     : "76203575b52b352db2090471673e4d1198c2c728de729592e023c37700613b2f")
-                || !matchesSha256(new File(heightmaps, "heightmaps.res"), forestVersion == 6
+                || !matchesSha256(new File(heightmaps, "heightmaps.res"), forestVersion == 10
+                    ? "aa34444f440d6a5d8ba3048653669a097b498ca0a0bc302a0396866e313fef91"
+                    : forestVersion >= 6
                     ? "2b36cd631ea9afec6737142afa670ac9bde1bd298fd7f7269e452777f1ee3f6b"
                     : forestVersion == 5
                     ? "3d939dec300393d759d7f4dc20f03eb6ecfdf8700b8cefc2d9e86053ca6c247f"
                     : "fa4db61c0527c04e4f69bf52354822726a91f9bf65269d4fab0bf7b134ca1071")
                 || !matchesSha256(new File(textures, "long_descent_ground.tga"), "7ae362bcb01fc810ab0da2f2f6d03bdb330480ca54339d12dc0afcedc7869805")
-                || !matchesSha256(new File(graphs, "graph300.dat"), forestVersion == 6
+                || (forestVersion >= 7 && !matchesSha256(new File(textures, "long_descent_clouds.tga"), "064645d6c31d7bd668276d6ddc6d4cb5857eb19e512273127d42107d9779b6ae"))
+                || !matchesSha256(new File(graphs, "graph300.dat"), forestVersion == 10
+                    ? "00e11099f3ff6d60eff857a2aba786688607a0b348ad971aec3b5be90a63caf7"
+                    : forestVersion >= 9
+                    ? "9b53f0a83e90da01b8a66595a498064454bdbcd1a05e5d3830c6bcd917a2c89b"
+                    : forestVersion >= 6
                     ? "631f5ba0a8ad877afb834a4d8a4c901cab682fdd963bbe0d0fad7523bf06c5dc"
                     : forestVersion == 5
                     ? "1e830fe5c42db0e3dbeb74186b37104f2538d914d0690371b972e649a8f69c85"
@@ -788,7 +859,17 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
             }
         }
         if (forestVersion >= 3) {
-            String[] hashes = forestVersion == 6 ? new String[] {
+            String[] hashes = forestVersion == 10 ? new String[] {
+                "921231426d4311af4e1be1e076cf5781a229df67c8d1c50bbf2ecc23e8109263",
+                "6461aa480762a2086ea7191d1a9ee6ffe9a61e572956bf757b7c916b192f10f8",
+                "244c3f1d85a3b01f7c8bc15336427f59e4b0de897b4eb13c34195766f9e36087",
+                "68af4ccc76a7826d49f62e4a87db02d79f6da172ad1c6d4876cbe5768a39bd23",
+                "565b8771bebfe1efbc276748346576edee30fb0fd38030501fbb0da2d907ddd0",
+                "2724e360230a84a696b11f8423af8feb4d743c2acc25d180550b487c4bc08ba5",
+                "46d3e36ec737077b7fc2c01293b76709b022b1567e8f6e0811ca9765c311f56d",
+                "e3147cdab8d0760c737960c4c55497da1b4f12183c03adc2a2c52c8ede5aa07a",
+                "dafe972900de4b237aa41974e352c733bf300d72a9ca6422e572eae55cf70033",
+            } : forestVersion >= 6 ? new String[] {
                 "0a4230b047186899089645661696c8ed2523b37a456c4b34999f8d46053c723d",
                 "047486e8afe0b9dab9bec450e5eea4c84756e43c599c33c9d0ec941939f68b9a",
                 "028563a560a7a7b3b2380ffd3b8f5ee2bec7d08db17e0b6852accb717f20b6bf",
@@ -825,8 +906,20 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
                 }
             }
         }
+        String[] patrolScripts = {
+            "5696cf08ab164dd8154bdb7433db791de023c9a458bf8169474b5de8a9dda4d7",
+            "44a37e6a3969c6ce7f41c5e0ebe55fb14c17162eab7b72f4f4c44b2b66c8934e",
+            "8cfe2e9668f313188c194358345b2b2a40c11be23cf3797b094ceff6ba0744d1",
+            "3492fe7b272379038c0c2b283275f3d5e7aae52d5227581f6163a07668ff6813",
+            "6d831e0a4676c594049ae679f40a573a24005a2f7c89dac5ae23134ac8938b34",
+            "3d00f63abf9592341419992af2814d84361e0a533cf3b4934b024033556b3e32",
+            "e03e4267e405f465d9d605b1004ffa9f390e400d222c77dc1c785880cb7afd4a",
+            "ebea2cbf7048f36159ceb45fbf6fa41453db7b823d0f888570b99e5086418c78",
+        };
         for (int id = 200; id < 215; id++) {
-            if (!matchesSha256(new File(ai, id + ".qvm"), "96eb1eb2d0fbcca0e62698affed969a9db8e7ef4538c06108ec4cf5f6e3663ea")) {
+            String expected = forestVersion >= 8 && id < 208 ? patrolScripts[id - 200]
+                : "96eb1eb2d0fbcca0e62698affed969a9db8e7ef4538c06108ec4cf5f6e3663ea";
+            if (!matchesSha256(new File(ai, id + ".qvm"), expected)) {
                 return false;
             }
         }

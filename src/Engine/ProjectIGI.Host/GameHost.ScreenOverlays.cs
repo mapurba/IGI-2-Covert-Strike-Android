@@ -256,6 +256,7 @@ public sealed partial class GameHost
 
         _hudOverlay?.DrawRetailStatus(state.Batch, hudFrame);
         DrawModHudOverlays(state, view);
+        DrawMissionBriefingCaption(state);
 
         if (_mission.CutsceneFrameShown is { } cinematicFraming)
         {

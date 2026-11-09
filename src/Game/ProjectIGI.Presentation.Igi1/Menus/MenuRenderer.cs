@@ -61,6 +61,12 @@ public sealed class MenuRenderer : IDisposable
     private readonly RetailUiResources _resources;
     private readonly MenuStringTable _strings;
 
+    // A custom mission names its briefing picture by path (LOCAL:missions/<dir>/briefing.jpg), because it
+    // cannot add to missionsprites.res; those are read loose, once, misses included.
+    private readonly IGraphicsDevice _device;
+    private readonly VirtualFileSystem _fileSystem;
+    private readonly Dictionary<string, SpriteResource?> _looseSprites = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Initializes a new instance of the <see cref="MenuRenderer"/> class.</summary>
     /// <param name="device">The device to upload art to.</param>
     /// <param name="fileSystem">The virtual file system rooted at the installation.</param>
@@ -85,6 +91,8 @@ public sealed class MenuRenderer : IDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(resourcePath);
 
         _strings = strings;
+        _device = device;
+        _fileSystem = fileSystem;
         _resources = new RetailUiResources(device, new RetailUiResourceOptions { MatchStem = true });
         _resources.AddArchive(fileSystem.ReadArchive(resourcePath));
 
@@ -204,6 +212,12 @@ public sealed class MenuRenderer : IDisposable
     public void Dispose()
     {
         _resources.Dispose();
+        foreach (SpriteResource? sprite in _looseSprites.Values)
+        {
+            sprite?.Dispose();
+        }
+
+        _looseSprites.Clear();
     }
 
     /// <summary>Resolves and measures a screen's or a popup's labels so the line-up has sizes to work with.</summary>
@@ -1099,5 +1113,39 @@ public sealed class MenuRenderer : IDisposable
     /// Parameters name a bare file, so the archive is searched by stem. A name that resolves to
     /// nothing is not an error: the original tolerates an unset parameter and draws nothing.
     /// </remarks>
-    private SpriteResource? TryGetSprite(string name) => _resources.Sprite(name);
+    private SpriteResource? TryGetSprite(string name) =>
+        name.Contains(':', StringComparison.Ordinal) ? TryGetLooseSprite(name) : _resources.Sprite(name);
+
+    private SpriteResource? TryGetLooseSprite(string path)
+    {
+        if (_looseSprites.TryGetValue(path, out SpriteResource? cached))
+        {
+            return cached;
+        }
+
+        SpriteResource? resource = null;
+        try
+        {
+            if (_fileSystem.TryOpenRead(path, out Stream? stream))
+            {
+                using (stream)
+                using (MemoryStream buffer = new())
+                {
+                    stream.CopyTo(buffer);
+                    resource = SpriteResource.Upload(
+                        _device,
+                        SpriteLoader.Load(buffer.ToArray(), Path.GetFileName(path)),
+                        TextureFilter.Linear);
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or NotSupportedException
+            or ProjectIGI.Formats.Textures.TextureFormatException)
+        {
+            resource = null;
+        }
+
+        _looseSprites[path] = resource;
+        return resource;
+    }
 }

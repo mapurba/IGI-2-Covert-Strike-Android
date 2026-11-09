@@ -63,18 +63,39 @@ The Android host (`AndroidHost.cs`) runs the I.G.I. 2 title through `TitleCatalo
 
 ---
 
-## Mission 99: The Long Descent
+## Mission 99: Operation Redemption
 
-The Android build includes an experimental Mission 99 world prototype. With the .NET 10 SDK, generate its assets into a new directory and run the asset self-test:
+The mission menu registers **Operation Redemption**, set in the Uttarakhand sector of India. David Jones is inserted at dawn to recover the stolen Quantum Encryption Core from Server Building 03 before it can be transferred to a foreign syndicate.
+
+1. Breach the chain-link perimeter and evade the watchtowers.
+2. Reach Guard Post A, disable its generator and take the security keycard.
+3. Enter Server Building 03, hack the vault terminal and secure the Core.
+4. Exfiltrate to the canyon extraction. If any guard detects Jones and raises the alarm, the Core locks down and cannot be recovered.
+
+The generated 500 x 500 metre terrain has a mountain ridge, a cleared HALO insertion pocket, a plateau compound, internal roads, perimeter fencing with two double-leaf gates, vegetation and a lake-side extraction. Twelve placed structures use retail models and interiors: Guard Post A, the main gate booth, three watchtowers, barracks, command building, vehicle depot, logistics warehouse, Server Building 03, communications bunker and armory. Fitted doors include open, pickable, keycard-controlled and terminal-controlled routes; the generator self-test verifies the gate and objective wiring.
+
+The compound has six cameras, fifteen guards in two squads, eight walking patrol routes, mission status messages, a security alarm and the four-stage generator/keycard/terminal/Core interaction chain. The generator disables the outer cameras; hacking the vault terminal disables the remaining cameras and unlocks the Core interaction. The alarm permanently blocks Core recovery. The supplied briefing screen, WAV voice-over and captions are bundled with the level.
+
+The generator self-test is a scripted/geometry check, not a complete gameplay certification. The debug APK was installed on the connected Android phone and the generated mission scripts were verified against the installed files; the level was launched and a real gameplay screenshot captured. A complete hand-played run through every door, the alarm fail-state and extraction has not been recorded.
+
+The shared first-person renderer now preserves opaque alpha for baked weapons/items drawn directly to the display. Captured scene targets retain the zero-alpha rig marker used by scene effects, and translucent draws keep their original blend behavior. This fixes the black silhouette without replacing retail weapon textures or adding new weapons. An M16A2 texture was visibly restored on the test phone; the entire arsenal has not been visually checked.
+
+The .NET 10 mission generator creates the scripts, 1024 x 1024 terrain archive, terrain preview, forest placement data, guard AI scripts, sky and ground textures, and briefing assets. Generate to a new directory, then run its self-test:
 
 ```bash
 dotnet run --project apps/ProjectIGI.TerrainPrototype -- /path/to/new-output-directory
 dotnet run --project apps/ProjectIGI.TerrainPrototype -- --self-test
 ```
 
-The output directory must not already exist. The tool generates a compiled mission definition and level script, a `heightmaps/heightmaps.res` archive with a 1024 x 1024 tile, a generated prototype ground texture, a grayscale `terrain-preview.pgm`, an AI graph, forest placement files, and scripts that invoke the installed game's default AI handlers. The terrain material instead references `MISSIONS/multiplayer/jungle/textures/lushgrass.jpg` from the user's installed game. That file must be present in the imported game data; if it is missing, the renderer logs a warning and the ground draws untextured. The 500 x 500 metre terrain has a mountain lookout in the northwest and lower open ground toward the southeast. The compound and navigation graph retain their internal spacing while moving closer to the lookout. The level declares a daytime sky, midday sun and ambient light, uses the original player and first-person arms model names, and requests an M16A2. It also references the player's installed location 1 game packs for three compound buildings, 15 armed soldier placements, two camera placements, and tree, bush and grass models; those retail assets are not bundled in the APK. On Android, the app installs the mission under the existing `Project IGI 2/missions/long_descent` directory (using the existing folder's casing) after it verifies or imports the user's game files; no retail mission files are replaced. Exact matches to the earlier bundled prototypes are preserved in app storage before updating, and unrecognized mission files are not overwritten.
+The output directory must not already exist. The generated terrain reuses the imported game's ground material and the building models, interiors, door models and props come from the user's retail packs; copyrighted retail assets are not bundled in the APK. Android installs the mission under the existing `Project IGI 2/MISSIONS/long_descent` directory, preserving the retail campaign and backing up recognized previous Mission 99 revisions before updating. Unknown or conflicting mission data is not overwritten.
 
-This is not a complete or playable extraction mission. The 500-metre revision loaded on the tested Android device at the expected lookout; the terrain boundary and sparse prototype compound were visibly exposed from that viewpoint. The existing three buildings have not been replaced by the requested accessible intelligence facility. The increased touch sensitivity while a weapon scope is active still needs device verification. Grass placements vary the size and rotation of one grass model rather than providing distinct grass species. Performance across the level has not been measured. The user reports that enemies fire. Guard patrols, taking damage and death remain unverified. Camera detection and alarms, convoy, navigable objective building, lake, intelligence retrieval, extraction, mission completion and failure remain unimplemented or unverified. The requested sniper loadout is not implemented. The first-person weapon appeared as a dark silhouette; the user reported that the controls and optics work. The preview shows height only. The self-test checks the generated graph's connectivity, vegetation and guard placement heights and scripts as well as terrain, daylight, task layout, delayed updates and weapon-script invocation; it does not establish AI behavior, camera detection, visual quality, or complete gameplay.
+To identify possible interior models in those installed packs without copying game assets, run `dotnet run --project apps/ProjectIGI.TerrainPrototype -- --inspect-buildings "<game-directory>"`. The listing reports render bounds, shell portals and attached models with portal sectors. It does not resolve magic-object types or establish walkable entrances, stairs, collision, furnishings or gameplay; candidates must be checked in the game before use.
+
+`-- --walk-test "<game-directory>"` loads the placed building and door collision models from the installed packs and samples doorway clearance and reachable floor space. Set `IGI_CELL=0.2` to resolve narrow retail staircases. This is a geometric diagnostic, not a substitute for testing movement and interactions with the in-game player physics.
+
+Fifteen guards use the existing soldier AI system; eight patrol nodes define their walking routes. Both squads link to the new alarm control, which responds to guard detection and sends the alarm event to the AI. The self-test checks task wiring and patrol graph data; a complete in-game AI behavior review remains outstanding.
+
+The build is installed and running on the connected phone, and its Mission 99 scripts match the bundled hashes. The captured view confirms the compound, chain-link perimeter, roads, vegetation and HUD load; it also exposes remaining visual issues: the sky still renders as a flat brown field and foreground foliage partly frames the view. Buildings are retail-derived models rather than custom architecture, and not every requested detail (moving vehicles, bespoke rooftop/ventilation routes, all building-specific interiors and multi-species plants) is implemented. No full phone playthrough has yet verified the alarm lockdown, doors, terminal, Core recovery or extraction. See [the mission brief and phone capture](custom-mission/mission1.md) for the current assets and evidence.
 
 ---
 

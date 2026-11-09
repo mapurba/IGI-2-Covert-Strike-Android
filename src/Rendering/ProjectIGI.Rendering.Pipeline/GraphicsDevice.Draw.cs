@@ -589,7 +589,8 @@ public sealed partial class GraphicsDevice : ISdfTextDevice
             _firstPerson,
             linearScene,
             _objectFogNear,
-            _objectFogFar);
+            _objectFogFar,
+            SceneCapture: Capturing);
 
         ForwardPushBlock.Write(push, state, modelView, blend, hasLightmap);
     }

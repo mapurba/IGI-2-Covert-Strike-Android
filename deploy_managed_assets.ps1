@@ -5,6 +5,9 @@ $ErrorActionPreference = "Stop"
 
 Write-Host "Building .NET ARM64 assemblies in Release mode..." -ForegroundColor Green
 dotnet publish apps\ProjectIGI.Android\ProjectIGI.Android.csproj -c Release -r android-arm64 --no-self-contained
+if ($LASTEXITCODE -ne 0) {
+    throw "Managed publish failed; existing Android assets were not replaced."
+}
 
 $publishDir = "apps\ProjectIGI.Android\bin\Release\net10.0\android-arm64\publish"
 $targetDirs = @(

@@ -66,6 +66,12 @@ public sealed partial class GameHost
     private SpriteResource? _loadingArt;
     private bool _loadingArtAttempted;
 
+    /// <summary>Whether the loading art is the mission's own briefing screen rather than the title art.</summary>
+    private bool _loadingArtIsBriefing;
+
+    /// <summary>The briefing screen a custom mission may ship in its own directory, as a baseline JPEG.</summary>
+    private const string MissionBriefingImageFile = "briefing.jpg";
+
     /// <summary>Loads the loading art out of the app's own files.</summary>
     /// <remarks>
     /// The art is Ray's I.G.I. 2 title art, not retail data, so it ships in the APK under
@@ -88,6 +94,35 @@ public sealed partial class GameHost
         }
 
         _loadingArtAttempted = true;
+        _loadingArtIsBriefing = false;
+
+        // A custom mission may ship its own briefing screen beside its scripts; it stands in for the
+        // title art on that mission's card. Drawn letterboxed, since a briefing carries text that a
+        // stretch to the screen's aspect would distort.
+        if (_loadingMission is { } briefed
+            && _fileSystem.TryOpenRead($"LOCAL:{briefed.MissionDirectory}/{MissionBriefingImageFile}", out Stream? briefingStream))
+        {
+            try
+            {
+                using (briefingStream)
+                using (MemoryStream buffer = new())
+                {
+                    briefingStream.CopyTo(buffer);
+                    _loadingArt = SpriteResource.Upload(
+                        _device,
+                        SpriteLoader.Load(buffer.ToArray(), MissionBriefingImageFile),
+                        TextureFilter.Linear);
+                }
+
+                _loadingArtIsBriefing = true;
+                _logger.Information("Mission", $"Loaded the mission's own briefing screen for its card ({briefed.MissionDirectory}).");
+                return _loadingArt;
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning("Mission", $"The mission's briefing screen could not be read: {ex.Message}");
+            }
+        }
 
         string userDir = SettingsPaths.GetUserDirectory();
         string[] paths =
@@ -594,7 +629,16 @@ public sealed partial class GameHost
         // stands on its own — never a blurry sprite, never the old bundled splash.
         if (GetLoadingArt() is { } art)
         {
-            art.DrawStretched(batch, 0, new RectF(0f, 0f, width, height), Bgra32.White, BlendMode.Opaque);
+            RectF artRect = new(0f, 0f, width, height);
+            if (_loadingArtIsBriefing && art.Asset.DefaultWidth > 0 && art.Asset.DefaultHeight > 0)
+            {
+                float fit = Math.Min(width / art.Asset.DefaultWidth, height / art.Asset.DefaultHeight);
+                float fitWidth = art.Asset.DefaultWidth * fit;
+                float fitHeight = art.Asset.DefaultHeight * fit;
+                artRect = new RectF((width - fitWidth) * 0.5f, (height - fitHeight) * 0.5f, fitWidth, fitHeight);
+            }
+
+            art.DrawStretched(batch, 0, artRect, Bgra32.White, BlendMode.Opaque);
         }
 
         // 3. The bottom progress bar's geometry, needed to place the text block above it.

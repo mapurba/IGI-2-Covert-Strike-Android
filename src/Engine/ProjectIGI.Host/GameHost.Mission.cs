@@ -172,8 +172,8 @@ public sealed partial class GameHost
     /// <param name="id">The mission id, for the colour grade and the log.</param>
     /// <param name="promoted">
     /// <see langword="true"/> when the level arrived as the menu's backdrop and is being promoted rather
-    /// than loaded. The backdrop is already drawn — its scene, collision index, terrain, sky, sun, grade
-    /// and camera were all built by <see cref="AdoptPreview"/> off the render thread — so the steps that
+    /// than loaded. The backdrop is already drawn ï¿½ its scene, collision index, terrain, sky, sun, grade
+    /// and camera were all built by <see cref="AdoptPreview"/> off the render thread ï¿½ so the steps that
     /// would rebuild them are skipped and the rest runs exactly as it does for a cold start. The order of
     /// everything else is deliberately untouched between the two paths: the AI's ray cast closes over
     /// <c>_mission.Terrain</c>, the interactions have to exist before the brains are animated, and the
@@ -430,7 +430,7 @@ public sealed partial class GameHost
     /// <returns><see langword="true"/> when the mission is up and the player is standing in it.</returns>
     /// <remarks>
     /// <para>
-    /// The level under the menu is not a picture of the mission — it <em>is</em> the mission, built by
+    /// The level under the menu is not a picture of the mission ï¿½ it <em>is</em> the mission, built by
     /// <see cref="MissionPreviewLoader"/> on a worker thread while the player was reading the briefing.
     /// The only reason it was not playable is that it was built into its own private
     /// <see cref="GameLoop"/>, which is exactly what made building it off the render thread safe: its
@@ -439,7 +439,7 @@ public sealed partial class GameHost
     /// </para>
     /// <para>
     /// What that buys is the whole of the load: the packs are parsed, the scene walked, the collision
-    /// index built, the terrain surface built and — the single largest cost — every ground tile's detail
+    /// index built, the terrain surface built and ï¿½ the single largest cost ï¿½ every ground tile's detail
     /// map derived, all of it already done and none of it on this thread. What is left is the part that
     /// genuinely cannot leave the render thread, which is the GL uploads, and those are the subject of
     /// the arming that runs while the menu is idle.
@@ -447,7 +447,7 @@ public sealed partial class GameHost
     /// <para>
     /// The outgoing loop and its resource registry are dropped here. That is not housekeeping: a
     /// resource registry holds a level's worth of packs, and <see cref="AdoptPreview"/>
-    /// already carries the scar of a leak in the same shape — a world renderer dropped without being
+    /// already carries the scar of a leak in the same shape ï¿½ a world renderer dropped without being
     /// disposed leaked a level's textures per row of the mission list.
     /// </para>
     /// </remarks>
@@ -495,8 +495,8 @@ public sealed partial class GameHost
         _computerOpen = false;
         _computerFlight.Reset();
 
-        // The outgoing loop's level tasks, if it had any. Coming from the front end it has none — the
-        // shell is drawn over a backdrop, not over a played mission — but a promotion reached from
+        // The outgoing loop's level tasks, if it had any. Coming from the front end it has none ï¿½ the
+        // shell is drawn over a backdrop, not over a played mission ï¿½ but a promotion reached from
         // anywhere else must not leave the previous level's tree alive in a loop nobody advances.
         if (outgoing.Tasks.Root is { } outgoingRoot)
         {
@@ -546,6 +546,7 @@ public sealed partial class GameHost
         _mission.ReleaseRuntimes();
         _hosted.Audio.ForgetCameras();
         _cutsceneSounds.StopAll();
+        StopMissionBriefing();
         _session.Mission = null;
 
         // The level's own sun goes with the level. It is read on load only when it is not already set --

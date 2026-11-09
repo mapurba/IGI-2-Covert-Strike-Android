@@ -510,7 +510,8 @@ public sealed partial class Igi2ViewModelRenderer : ITitleViewModelPresenter, IT
 
         Vertex3D[] vertices = [.. geometry.Vertices];
         MeshHandle mesh = skinned ? MeshHandle.None : _device.CreateMesh(vertices, geometry.Indices);
-        _logger.Information(LogCategory, $"First-person part '{name}': {model.Format}, {subsets.Count} subset(s).");
+        _logger.Information(LogCategory, $"First-person part '{name}': {model.Format}, {subsets.Count} subset(s), "
+            + $"{subsets.Count(static subset => subset.Item2.IsValid)} textured.");
         return new Part(skin, geometry, vertices, mesh, [.. subsets]);
     }
 

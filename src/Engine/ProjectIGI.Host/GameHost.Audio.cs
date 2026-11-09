@@ -81,6 +81,7 @@ public sealed partial class GameHost
             _audioOut.Music.Play(MusicPlayer.GameMusic);
         }
 
+        UpdateMissionBriefing();
         float delta = _audioOut.Advance();
         UpdateRainAmbience(delta);
     }

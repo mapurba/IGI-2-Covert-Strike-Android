@@ -11,7 +11,7 @@ namespace ProjectIGI.Game.Igi2.World;
 /// <summary>I.G.I. 2's missions, as its own <c>mission.qvm</c> scripts publish them.</summary>
 /// <remarks>
 /// <para>
-/// The walk is the shared one — a script per mission directory — and the reader is not. I.G.I. 2's
+/// The walk is the shared one ï¿½ a script per mission directory ï¿½ and the reader is not. I.G.I. 2's
 /// <c>DefineMission</c> takes <b>fourteen</b> arguments where the first game's takes eleven, and the
 /// difference is not a suffix: the fourth argument of the first game is the id of the mission that
 /// follows, and I.G.I. 2 has nothing of the kind.
@@ -37,7 +37,7 @@ namespace ProjectIGI.Game.Igi2.World;
 /// </code>
 /// <para>
 /// <b>Those offsets are what settles the packs.</b> <c>Game_CreateHandler</c> (<c>igi2ed 0x4469A0</c>)
-/// reads the descriptor at <c>+0x550</c>, <c>+0x750</c>, <c>+0x650</c> and <c>+0x770</c> — which are
+/// reads the descriptor at <c>+0x550</c>, <c>+0x750</c>, <c>+0x650</c> and <c>+0x770</c> ï¿½ which are
 /// 1360, 1872, 1616 and 1904, the common directory and its pack name and then the level directory and
 /// its pack name. So the four packs a mission opens are the two global ones and the two this record
 /// names, and neither the order nor the names are inferred from the directory tree.
@@ -130,7 +130,7 @@ public sealed class Igi2MissionCatalogue : IMissionCatalogue<MissionDescriptor>
     /// <para>
     /// The campaign's missions by ascending id, then everything else the same way. Ascending id is the
     /// campaign's own grouping rather than an arbitrary sort: a mission's id is its location and its
-    /// level read together — <c>location1/level1</c> is 11 and <c>location2/LEVEL2</c> is 22 — so
+    /// level read together ï¿½ <c>location1/level1</c> is 11 and <c>location2/LEVEL2</c> is 22 ï¿½ so
     /// ascending id walks the locations in turn and the levels within each.
     /// </para>
     /// <para>
@@ -160,7 +160,7 @@ public sealed class Igi2MissionCatalogue : IMissionCatalogue<MissionDescriptor>
 
     /// <inheritdoc/>
     /// <remarks>
-    /// The campaign by ascending id, and nothing else — a multiplayer map is not part of a progression.
+    /// The campaign by ascending id, and nothing else ï¿½ a multiplayer map is not part of a progression.
     /// This title asserts no order of its own, so the id's own structure is what supplies one.
     /// </remarks>
     public IEnumerable<MissionDescriptor> InProgressionOrder() => Campaign.OrderBy(static m => m.Id);
@@ -179,8 +179,8 @@ public sealed class Igi2MissionCatalogue : IMissionCatalogue<MissionDescriptor>
     /// <param name="d">The fourth.</param>
     /// <returns>The four characters, in order.</returns>
     /// <remarks>
-    /// The original packs them into a word big-endian — <c>a &lt;&lt; 24 | b &lt;&lt; 16 | c &lt;&lt; 8 | d</c>
-    /// — which is the same four characters in the same order, so this keeps them as text. A word would
+    /// The original packs them into a word big-endian ï¿½ <c>a &lt;&lt; 24 | b &lt;&lt; 16 | c &lt;&lt; 8 | d</c>
+    /// ï¿½ which is the same four characters in the same order, so this keeps them as text. A word would
     /// have to be unpacked again by everything that wanted to read it.
     /// </remarks>
     public static string ModeOf(string a, string b, string c, string d) =>
@@ -215,13 +215,7 @@ public sealed class Igi2MissionCatalogue : IMissionCatalogue<MissionDescriptor>
             GameMode = ModeOf(call.GetString(1), call.GetString(2), call.GetString(3), call.GetString(4)),
 
             // The two global packs first, then the two this mission names. Earlier shadows later.
-            Packs =
-            [
-                GlobalCommonPack,
-                GlobalNewPack,
-                new PackReference($"LOCAL:{commonDirectory}/", commonPack),
-                new PackReference($"LOCAL:{levelDirectory}/", levelPack),
-            ],
+            Packs = PacksFor(call, commonDirectory, commonPack, levelDirectory, levelPack),
         };
 
         if (!_byId.TryAdd(descriptor.Id, descriptor))
@@ -239,5 +233,31 @@ public sealed class Igi2MissionCatalogue : IMissionCatalogue<MissionDescriptor>
 
         _missions.Add(descriptor);
         return QvmValue.FromInt32(1);
+    }
+
+    /// <summary>The first argument past the fourteen the retail <c>DefineMission</c> takes.</summary>
+    private const int FirstExtraPackArgument = 14;
+
+    private static PackReference[] PacksFor(
+        QvmCallContext call, string commonDirectory, string commonPack, string levelDirectory, string levelPack)
+    {
+        List<PackReference> packs =
+        [
+            GlobalCommonPack,
+            GlobalNewPack,
+            new PackReference($"LOCAL:{commonDirectory}/", commonPack),
+            new PackReference($"LOCAL:{levelDirectory}/", levelPack),
+        ];
+
+        // A custom mission may borrow models from other retail levels by passing (directory, pack) pairs after
+        // the fourteen retail arguments. They open after the level pack, so they only add names and never shadow
+        // the level's own. No retail script passes more than fourteen.
+        for (int index = FirstExtraPackArgument; index + 1 < call.ArgumentCount; index += 2)
+        {
+            string directory = Core.ResourcePath.NormalizeDirectory(call.GetString(index));
+            packs.Add(new PackReference($"LOCAL:{directory}/", call.GetString(index + 1)));
+        }
+
+        return [.. packs];
     }
 }

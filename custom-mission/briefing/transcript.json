@@ -1,0 +1,30 @@
+{
+  "title": "Operation Redemption - mission briefing",
+  "sampleRate": 22050,
+  "voices": {
+    "ANYA": { "voice": "Microsoft Susan",     "fallback": "Microsoft Hazel", "rate": 1.08, "pitch": 1.0, "radio": true },
+        "JONES": { "voice": "Microsoft George", "fallback": "Microsoft David", "rate": 1.04, "pitch": 0.94, "radio": false }
+  },
+  "lines": [
+    {
+      "speaker": "ANYA",
+      "text": "Alright, Jones, listen up. We have a crisis in the Uttarakhand sector. A rogue splinter cell, the Himalayan Vanguard, has raided an Indian defense facility. They've made off with the Quantum Encryption Core, a highly classified prototype that could compromise the entire northern border radar and defense grid. If they hand this over to their syndicate buyers, we are blind."
+    },
+    {
+      "speaker": "JONES",
+      "text": "So I'm going in to get it back. What's the drop-off and insertion plan, Anya?"
+    },
+    {
+      "speaker": "ANYA",
+      "text": "You'll be dropped via HALO under the cover of dawn on the outskirts. Satellite feeds show the target has been moved to a heavily guarded compound nested in a valley. Your primary target is Server Building 03, located deep inside the compound where the Core's biometric signature is being held."
+    },
+    {
+      "speaker": "JONES",
+      "text": "Got it. I'll need to disable their eyes first if I want to make it to that building."
+    },
+    {
+      "speaker": "ANYA",
+      "text": "Exactly. Your first objectives are to bypass the perimeter fence, avoid the main watchtower, and find Guard Post A to sabotage their main power generator. That will cut their CCTV and camera feed. Once the grid is dark, infiltrate Server Building 03, secure the Quantum Encryption Core, and meet extraction. Stay ghost, Jones. If they trigger the alarm, the Core will go into lockdown, and we lose it forever. Good luck."
+    }
+  ]
+}
