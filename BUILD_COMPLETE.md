@@ -1,4 +1,7 @@
-# 🎉 BUILD COMPLETE: Phase 4 Epic Mission
+# Historical build report
+
+> **Correction:** Mission 99 is not yet a playable or deployed mission. The status,
+> deployment, and testing claims below are historical and do not establish that it works.
 
 **Date:** 2026-11-08  
 **Status:** ✅ SUCCESS  

@@ -1,3 +1,7 @@
+CORRECTION: Mission 99 is not yet deployed or playable. The mission and device
+testing claims below are unverified. build_phase4_epic.sh currently stops rather
+than building an APK with an incomplete mission.
+
 ╔════════════════════════════════════════════════════════════════════════════════╗
 ║                                                                                ║
 ║          IGI-2 COVERT STRIKE - ANDROID APK READY FOR DEPLOYMENT ✅             ║

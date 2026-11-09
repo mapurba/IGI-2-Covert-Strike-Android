@@ -1,4 +1,10 @@
-# 🎉 IGI-2 Covert Strike Phase 4: COMPLETE & DEPLOYED
+# Historical build report — mission not complete
+
+> **Correction:** The claims below about Mission 99 being integrated, playable, or tested
+> on a device are unverified and incorrect. The generated level description is not
+> executable QVM, and the Android app does not deploy it to the game catalogue.
+> `build_phase4_epic.sh` now stops without building an APK until a playable level exists.
+> Use `bash build_android.sh` for the existing app; it does not make Mission 99 playable.
 
 ## ✅ Build Status: SUCCESS
 
@@ -256,4 +262,3 @@ The APK is production-ready for testing on your Android device. All mission asse
 **Status: ✅ COMPLETE**
 
 🎮 Happy Gaming! 🎮
-
